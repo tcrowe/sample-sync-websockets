@@ -1,0 +1,23 @@
+{
+  "assets": {},
+  "owner": "",
+  "contact": {
+    "name": "",
+    "email": "",
+    "url": ""
+  },
+  "main": "dist/scene/index.js",
+  "scene": {
+    "base": "0,0",
+    "parcels": ["0,0"]
+  },
+  "communications": {
+    "type": "webrtc",
+    "signalling": "https://rendezvous.decentraland.org"
+  },
+  "policy": {},
+  "display": {
+    "title": "sample-sync-websockets",
+    "description": "Fast multiplayer state synchronization via websockets"
+  }
+}

@@ -1,0 +1,9 @@
+[
+  {
+    "name": "scene",
+    "kind": "Webpack",
+    "file": "./src/scene/index.tsx",
+    "config": "./src/scene/tsconfig.json",
+    "target": "webworker"
+  }
+]

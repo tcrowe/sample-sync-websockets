@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "module": "esnext",
+    "target": "es2017",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "sourceMap": true,
+    "moduleResolution": "node",
+    "declaration": false,
+    "strictFunctionTypes": true,
+    "forceConsistentCasingInFileNames": true,
+    "noUnusedLocals": true,
+    "alwaysStrict": true,
+    "allowSyntheticDefaultImports": false,
+    "allowUnreachableCode": false,
+    "allowUnusedLabels": false,
+    "newLine": "LF",
+    "stripInternal": true,
+    "baseUrl": ".",
+    "strict": true,
+    "jsx": "react",
+    "jsxFactory": "DCL.createElement",
+    "removeComments": true,
+    "outDir": "../../dist/scene",
+    "pretty": true,
+    "lib": ["esnext", "dom", "webworker"]
+  }
+}
