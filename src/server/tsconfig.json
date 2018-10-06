@@ -6,23 +6,16 @@
     "experimentalDecorators": true,
     "sourceMap": true,
     "moduleResolution": "node",
-    "declaration": false,
-    "strictFunctionTypes": true,
     "forceConsistentCasingInFileNames": true,
     "noUnusedLocals": true,
-    "alwaysStrict": true,
     "allowSyntheticDefaultImports": false,
-    "allowUnreachableCode": false,
-    "allowUnusedLabels": false,
-    "newLine": "LF",
+    "newLine": "lf",
     "stripInternal": true,
     "baseUrl": ".",
     "strict": true,
     "removeComments": true,
     "outDir": "../../dist",
     "pretty": true,
-    "lib": [
-      "ESNext"
-    ]
+    "lib": ["esnext"]
   }
 }
