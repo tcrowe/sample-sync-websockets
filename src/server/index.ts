@@ -8,27 +8,16 @@ Forks:
 import * as cluster from "cluster"
 import * as os from "os"
 
-/**
- * When a worker errors print it then exit
- */
-const workerError = (workerType: string, workerId: number) => (err: Error) => {
-  console.log(`worker error`, workerType, workerId, err)
-  process.exit(1)
-}
-
 if (cluster.isMaster === true) {
   //
   // master process
   //
 
   // for each cpu run a websocket process
-  os.cpus()
-    .map(cpu => cluster.fork({ WORKER_TYPE: "ws" }))
-    .forEach(wsWorker => wsWorker.on("error", workerError("ws", wsWorker.id)))
+  os.cpus().forEach(cpu => cluster.fork({ WORKER_TYPE: "ws" }))
 
   // but only run one preview process
-  const previewWorker = cluster.fork({ WORKER_TYPE: "preview" })
-  previewWorker.on("error", workerError("preview", previewWorker.id))
+  cluster.fork({ WORKER_TYPE: "preview" })
 }
 
 if (cluster.isMaster === false) {
