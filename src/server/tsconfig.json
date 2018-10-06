@@ -16,6 +16,6 @@
     "removeComments": true,
     "outDir": "../../dist",
     "pretty": true,
-    "lib": ["esnext"]
+    "lib": ["ESNext"]
   }
 }
