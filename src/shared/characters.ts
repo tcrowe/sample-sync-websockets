@@ -151,7 +151,7 @@ export interface ICharacterPingEvent {
  */
 interface ICharacterExpiration {
   id: string
-  timer: number
+  timer: number | NodeJS.Timer | WindowTimers | any
 }
 
 /**
