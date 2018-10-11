@@ -5,51 +5,49 @@ and displays for the user.
 
 */
 
-import * as DCL from "decentraland-api"
-import { Vector3Component } from "decentraland-api"
-import * as io from "socket.io-client"
-import { socketPath, socketPort } from "../shared/config"
-
+import * as DCL from "decentraland-api";
+import { Vector3Component } from "decentraland-api";
+import * as io from "socket.io-client";
+import { Character } from "../shared/character";
 import {
-  Character,
   CharacterManager,
   ICharacterJoinEvent,
   ICharacterPartEvent,
-  ICharacterUsernameEvent,
   ICharacterPositionEvent,
   ICharacterRotationEvent,
-  clampNumber,
-  clampVector3
-} from "../shared/characters"
+  ICharacterUsernameEvent,
+} from "../shared/characters";
+import { socketPath, socketPort } from "../shared/config";
+import { clampNumber, clampVector3 } from "../shared/formats";
 
-const isObject = require("lodash/isObject")
-const padEnd = require("lodash/padEnd")
-const clamp = require("lodash/clamp")
-const throttle = require("lodash/throttle")
+const isObject = require("lodash/isObject");
+const padEnd = require("lodash/padEnd");
+const clamp = require("lodash/clamp");
+const throttle = require("lodash/throttle");
 
 /**
  * The tiles are all 2x2 spaces
  */
-const tileScale: Vector3Component = { x: 2, y: 0.1, z: 2 }
-const defaultTileColor = "#222222"
+const tileScale: Vector3Component = { x: 2, y: 0.1, z: 2 };
+const defaultTileColor = "#222222";
 
-const ghostArc = 170
-const ghostRadius = 0.6
-const ghostScale = { x: 1, y: 0.5, z: 1 }
+const ghostArc = 170;
+const ghostRadius = 0.6;
+const ghostScale = { x: 1, y: 0.5, z: 1 };
 
-const textFontFamily = "monospace"
-const textColor = "#FFFFFF"
-const textOutlineColor = "#000000"
-const textOutlineWidth = 1
+const textFontFamily = "monospace";
+const textColor = "#FFFFFF";
+const textOutlineColor = "#000000";
+const textOutlineWidth = 1;
 
-const gridMin = 0
-const gridMax = 5
+const gridMin = 0;
+const gridMax = 5;
 
-const signColor = "#001133"
+const signColor = "#001133";
 
-const initTilePositions: Vector3Component[] = []
-const initTileColors: string[] = []
-const initTileYs: number[] = []
+const initTilePositions: Vector3Component[] = [];
+const initTileColors: string[] = [];
+const initTileYs: number[] = [];
 
 const ghostMaterial = (
   <material
@@ -61,7 +59,7 @@ const ghostMaterial = (
     hasAlpha={true}
     transparencyMode={2}
   />
-)
+);
 
 const signMaterial = (
   <material
@@ -69,7 +67,7 @@ const signMaterial = (
     albedoColor={signColor}
     reflectivityColor={signColor}
   />
-)
+);
 
 const billboardBackgroundBox = (
   <box
@@ -79,7 +77,7 @@ const billboardBackgroundBox = (
     rotation={{ x: -50, y: 0, z: 0 }}
     material="#sign-material"
   />
-)
+);
 
 const usernameEditorBackgroundBox = (
   <box
@@ -88,7 +86,7 @@ const usernameEditorBackgroundBox = (
     scale={{ x: 2, y: 1, z: 0.01 }}
     material="#sign-material"
   />
-)
+);
 
 const usernameEditorLabel = (
   <text
@@ -105,33 +103,33 @@ const usernameEditorLabel = (
     shadowOffsetY={3}
     shadowColor={textOutlineColor}
   />
-)
+);
 
 interface IState {
-  connected: boolean
-  socketErrors: Error[]
-  reconnects: number
-  tileYs: number[]
-  tileColors: string[]
-  usernameInputText: string
-  billboardText: string
+  connected: boolean;
+  socketErrors: Error[];
+  reconnects: number;
+  tileYs: number[];
+  tileColors: string[];
+  usernameInputText: string;
+  billboardText: string;
 }
 
 // the socket.io client connects somewhere else than where this scene is
 // it's configurable within ../shared/config.ts
-const { origin } = location
-const socketHost: string = origin.replace(/\d{1,}$/, socketPort)
+const { origin } = location;
+const socketHost: string = origin.replace(/\d{1,}$/, socketPort);
 
 for (let a = gridMin; a < gridMax; a += 1) {
   for (let b = gridMin; b < gridMax; b += 1) {
     const position: Vector3Component = {
       x: a * 2 + 1,
       y: 1,
-      z: b * 2 + 1
-    }
-    initTilePositions.push(position)
-    initTileColors.push(defaultTileColor)
-    initTileYs.push(1)
+      z: b * 2 + 1,
+    };
+    initTilePositions.push(position);
+    initTileColors.push(defaultTileColor);
+    initTileYs.push(1);
   }
 }
 
@@ -141,9 +139,9 @@ for (let a = gridMin; a < gridMax; a += 1) {
  * Note: It uses {x,z} not {x,y}. The y-coordinate is how high up it is.
  */
 function distance(pos1: Vector3Component, pos2: Vector3Component): number {
-  const a = pos1.x - pos2.x
-  const b = pos1.z - pos2.z
-  return Math.sqrt(a * a + b * b)
+  const a = pos1.x - pos2.x;
+  const b = pos1.z - pos2.z;
+  return Math.sqrt(a * a + b * b);
 }
 
 export default class WebsocketScene extends DCL.ScriptableScene<any, IState> {
@@ -153,230 +151,291 @@ export default class WebsocketScene extends DCL.ScriptableScene<any, IState> {
   simple types are in the IState object. More complex ones are outside it.
   -Tony
   */
-  state: IState = {
+  public state: IState = {
+    billboardText: "",
     connected: false,
-    socketErrors: [],
     reconnects: 0,
-    tileYs: initTileYs,
+    socketErrors: [],
     tileColors: initTileColors,
+    tileYs: initTileYs,
     usernameInputText: "",
-    billboardText: ""
-  }
+  };
 
   // representing the viewer of this scene
-  character = new Character()
+  public character = new Character();
 
   // other players around the network
-  characterManager = new CharacterManager()
+  public characterManager = new CharacterManager();
 
   // socket.io must uses CORS to connect across origins
   // this object connects on a different port
-  socket = io(socketHost, {
+  public socket = io(socketHost, {
+    jsonp: false, // jsonp is impossible in this context
     path: socketPath, // with a specific URI
-    transports: ["websocket"], // only use websockets, not polling
     reconnectionAttempts: 30, // give up after failing too many times
-    jsonp: false // jsonp is impossible in this context
-  })
+    transports: ["websocket"], // only use websockets, not polling
+  });
+
+  /**
+   * When characters are in proximity to a tile it should light up.
+   *
+   * It's throttled just in case this is a very heavy computation.
+   */
+  public generateTileColors = throttle((): void => {
+    const { character, characterManager } = this;
+    const { characters } = characterManager;
+    const tileColors: string[] = [];
+    const charPos = character.position;
+
+    initTilePositions.forEach((tilePos: Vector3Component) => {
+      let colorByte = 34;
+
+      // get the distance of the viewing user to the tile
+      const characterDistance = distance(charPos, tilePos);
+
+      // calculate all remote users distances
+      const otherCharacterDistances: number[] = characters
+        .map((char) => distance(char.position, tilePos))
+        .filter((num) => num < 2);
+
+      /**
+       * The closer the more it should light up. The idea here is to
+       * keep incrementing it even if it goes over a valid byte.
+       *
+       * The result is then clamped to the byte value range we need.
+       */
+      if (characterDistance < 1) {
+        colorByte += 200;
+      } else if (characterDistance < 2) {
+        colorByte += 100;
+      } else if (characterDistance < 3) {
+        colorByte += 50;
+      }
+
+      otherCharacterDistances.forEach((item) => {
+        if (item < 1) {
+          colorByte += 200;
+        } else if (item < 2) {
+          colorByte += 100;
+        } else if (item < 3) {
+          colorByte += 50;
+        }
+      });
+
+      // clamp
+      colorByte = clamp(colorByte, 34, 255);
+
+      // convert to hex
+      const hexByte = colorByte.toString(16);
+
+      // convert to hex color
+      const color = `#${hexByte}${hexByte}${hexByte}`;
+
+      tileColors.push(color);
+    });
+
+    this.setState({ tileColors });
+  }, 100);
 
   /**
    * There is a billboard in the scene. This builds a 3-column text
    * view of all the character names.
    */
-  generateBillboardText(): void {
-    const { character, characterManager } = this
-    const { characters } = characterManager
-    const usernames: string[] = characters.map(item => item.username)
-    const playerCount = usernames.length + 1
-    let row: string[] = []
-    let billboardText = `players (${playerCount}):\n-------`
+  public generateBillboardText(): void {
+    const { character, characterManager } = this;
+    const { characters } = characterManager;
+    const usernames: string[] = characters.map((item) => item.username);
+    const playerCount = usernames.length + 1;
+    let row: string[] = [];
+    let billboardText = `players (${playerCount}):\n-------`;
 
     // the viewing user is first
-    row.push(padEnd(character.username, 20))
+    row.push(padEnd(character.username, 20));
 
     function flush(): void {
-      billboardText += "\n" + row.join(" | ")
-      row = []
+      billboardText += "\n" + row.join(" | ");
+      row = [];
     }
 
     /// then everyone else
-    usernames.sort()
-    usernames.forEach(username => {
-      row.push(padEnd(username, 20))
+    usernames.sort();
+    usernames.forEach((username) => {
+      row.push(padEnd(username, 20));
 
       if (row.length === 3) {
-        flush()
+        flush();
       }
-    })
+    });
 
     if (row.length > 0) {
-      flush()
+      flush();
     }
 
-    this.setState({ billboardText })
+    this.setState({ billboardText });
   }
 
   /**
    * Announce to the server that we're here
    */
-  join(): void {
+  public join(): void {
     // console.log("join")
-    const { character } = this
-    const { id, username, position, rotation } = character
-    this.socket.emit("character-join", { id, username, position, rotation })
+    const { character } = this;
+    const { id, username, position, rotation } = character;
+    this.socket.emit("character-join", { id, username, position, rotation });
   }
 
   /**
    * Leave the scene
    */
-  part(): void {
-    const { id } = this.character
-    this.socket.emit("character-part", { id })
+  public part(): void {
+    const { id } = this.character;
+    this.socket.emit("character-part", { id });
   }
 
   //
   // socket.io events
   //
 
-  socketConnected(): void {
+  public socketConnected(): void {
     // console.log("socket connected")
-    this.setState({ connected: true })
-    this.join()
+    this.setState({ connected: true });
+    this.join();
   }
 
-  socketDisconnected(): void {
+  public socketDisconnected(): void {
     // console.error("socket disconnected")
-    this.setState({ connected: false })
+    this.setState({ connected: false });
   }
 
-  socketError(err: Error): void {
-    console.error("socket error", err)
-    const { socketErrors } = this.state
-    socketErrors.push(err)
-    this.setState({ socketErrors })
+  public socketError(err: Error): void {
+    console.error("socket error", err);
+    const { socketErrors } = this.state;
+    socketErrors.push(err);
+    this.setState({ socketErrors });
   }
 
-  socketReconnect(): void {
-    console.warn("socket reconnect")
-    let { reconnects } = this.state
-    reconnects += 1
-    this.setState({ reconnects })
-    this.join()
+  public socketReconnect(): void {
+    console.warn("socket reconnect");
+    let { reconnects } = this.state;
+    reconnects += 1;
+    this.setState({ reconnects });
+    this.join();
   }
 
   /**
    * Other characters have joined and will now be rendered in the scene
    */
-  characterJoin(joinEvent: ICharacterJoinEvent): void {
+  public characterJoin(joinEvent: ICharacterJoinEvent): void {
     if (isObject(joinEvent) === true && joinEvent.id === this.character.id) {
       // skip this event if the character is the viewer
-      return
+      return;
     }
 
-    const { characterManager } = this
-    characterManager.characterJoin(joinEvent)
-    this.forceUpdate()
-    this.generateBillboardText()
+    const { characterManager } = this;
+    characterManager.characterJoin(joinEvent);
+    this.forceUpdate();
+    this.generateBillboardText();
   }
 
-  characterPart(partEvent: ICharacterPartEvent): void {
-    this.characterManager.characterPart(partEvent)
-    this.forceUpdate()
-    this.generateBillboardText()
+  public characterPart(partEvent: ICharacterPartEvent): void {
+    this.characterManager.characterPart(partEvent);
+    this.forceUpdate();
+    this.generateBillboardText();
   }
 
   /**
    * A character changed their username
    */
-  characterUsername(usernameEvent: ICharacterUsernameEvent): void {
+  public characterUsername(usernameEvent: ICharacterUsernameEvent): void {
     if (
       isObject(usernameEvent) === true &&
       usernameEvent.id === this.character.id
     ) {
       // skip this event if the character is the viewer
-      return
+      return;
     }
 
-    const { characterManager } = this
-    characterManager.updateCharacterUsername(usernameEvent)
-    this.forceUpdate()
-    this.generateBillboardText()
+    const { characterManager } = this;
+    characterManager.updateCharacterUsername(usernameEvent);
+    this.forceUpdate();
+    this.generateBillboardText();
   }
 
   /**
    * This event is triggered when other users move around their scene. Their
    * position gets broadcast to everyone.
    */
-  characterPosition(positionEvent: ICharacterPositionEvent): void {
+  public characterPosition(positionEvent: ICharacterPositionEvent): void {
     if (
       isObject(positionEvent) === true &&
       positionEvent.id === this.character.id
     ) {
       // skip this event if the character is the viewer
-      return
+      return;
     }
 
-    this.characterManager.updateCharacterPosition(positionEvent)
-    this.forceUpdate()
+    this.characterManager.updateCharacterPosition(positionEvent);
+    this.forceUpdate();
   }
 
   /**
    * The rotation is broadcast any time they swivel around their camera.
    */
-  characterRotation(rotationEvent: ICharacterRotationEvent): void {
+  public characterRotation(rotationEvent: ICharacterRotationEvent): void {
     if (
       isObject(rotationEvent) === true &&
       rotationEvent.id === this.character.id
     ) {
       // skip this event if the character is the viewer
-      return
+      return;
     }
 
-    this.characterManager.updateCharacterRotation(rotationEvent)
-    this.forceUpdate()
-    this.generateTileColors()
+    this.characterManager.updateCharacterRotation(rotationEvent);
+    this.forceUpdate();
+    this.generateTileColors();
   }
 
   /**
    * This is a Decentraland event triggered when the user moves. It's broadcast
    * to the server so everyone can see.
    */
-  frameworkPositionChanged(evt: DCL.IEvents["positionChanged"]): void {
-    const { socket, character } = this
-    const { id } = character
-    let { position, cameraPosition, playerHeight } = evt
+  public frameworkPositionChanged(evt: DCL.IEvents["positionChanged"]): void {
+    const { socket, character } = this;
+    const { id } = character;
+    let { position, cameraPosition, playerHeight } = evt;
 
-    position = clampVector3(position)
-    cameraPosition = clampVector3(cameraPosition)
-    playerHeight = clampNumber(playerHeight)
+    position = clampVector3(position);
+    cameraPosition = clampVector3(cameraPosition);
+    playerHeight = clampNumber(playerHeight);
 
     socket.emit("character-position", {
-      id,
-      position,
       cameraPosition,
-      playerHeight
-    })
+      id,
+      playerHeight,
+      position,
+    });
 
-    this.character.position = position
-    this.generateTileColors()
+    this.character.position = position;
+    this.generateTileColors();
   }
 
   /**
    * When the user rotates around the view it will be broadcast. This
    * allows us to see where they are looking.
    */
-  frameworkRotationChanged(evt: DCL.IEvents["rotationChanged"]): void {
-    const { socket, character } = this
-    const { id } = character
-    const { rotation } = evt
-    socket.emit("character-rotation", { id, rotation })
+  public frameworkRotationChanged(evt: DCL.IEvents["rotationChanged"]): void {
+    const { socket, character } = this;
+    const { id } = character;
+    const { rotation } = evt;
+    socket.emit("character-rotation", { id, rotation });
   }
 
   /**
    * Draw a billboard with all the user's name on it. It's tilted down
    * so they can see it from below.
    */
-  playersBillboard(): DCL.ISimplifiedNode {
-    const { billboardText } = this.state
+  public playersBillboard(): DCL.ISimplifiedNode {
+    const { billboardText } = this.state;
 
     return (
       <text
@@ -400,26 +459,26 @@ export default class WebsocketScene extends DCL.ScriptableScene<any, IState> {
         shadowOffsetY={3}
         shadowColor={textOutlineColor}
       />
-    )
+    );
   }
 
   /**
    * Draw ghost placeholders for all the characters so we can see them in
    * realtime moving around and rotating.
    */
-  characterBoxes(): DCL.ISimplifiedNode[][] {
+  public characterBoxes(): DCL.ISimplifiedNode[][] {
     return this.characterManager.characters.map((char, index) => {
-      const { username, position, rotation } = char
-      const charBoxId = `character-box-${index}`
+      const { username, position, rotation } = char;
+      const charBoxId = `character-box-${index}`;
 
-      const { x, z } = position
-      const ghostPosition = { x, y: 1.5, z }
-      const nametagPosition = { x, y: 2.3, z }
+      const { x, z } = position;
+      const ghostPosition = { x, y: 1.5, z };
+      const nametagPosition = { x, y: 2.3, z };
       const nametagRotation = {
         x: rotation.x,
         y: rotation.y + 180,
-        z: rotation.z
-      }
+        z: rotation.z,
+      };
 
       // user ghost box
       const ghost = (
@@ -434,7 +493,7 @@ export default class WebsocketScene extends DCL.ScriptableScene<any, IState> {
           openEnded={true}
           material="#ghost-material"
         />
-      )
+      );
 
       // user name tag
       const nametag = (
@@ -450,102 +509,41 @@ export default class WebsocketScene extends DCL.ScriptableScene<any, IState> {
           width={2}
           height={0.6}
         />
-      )
+      );
 
-      return [ghost, nametag]
-    })
+      return [ghost, nametag];
+    });
   }
 
   /**
    * When the scene loads up we give a clue about the interactive floor tiles
    * by animating each one down in a fast animation sequence.
    */
-  transitionTileDown(tileIndex: number): void {
-    const { tileYs } = this.state
-    let y = tileYs[tileIndex]
+  public transitionTileDown(tileIndex: number): void {
+    const { tileYs } = this.state;
+    let y = tileYs[tileIndex];
 
     if (y <= 0) {
       // it's already at the ground level, early exit, stop animating this tile
-      return
+      return;
     }
 
     // move the tile down
-    y -= 0.1
+    y -= 0.1;
 
     // because javascript does incorrect math we have to force
     // only one decimal point
-    y = parseFloat(y.toFixed(1))
+    y = parseFloat(y.toFixed(1));
 
     // set the y of this tile
-    tileYs[tileIndex] = y
+    tileYs[tileIndex] = y;
 
     // animate
-    this.setState({ tileYs })
+    this.setState({ tileYs });
 
     // schedule another animation
-    setTimeout(() => this.transitionTileDown(tileIndex), 30)
+    setTimeout(() => this.transitionTileDown(tileIndex), 30);
   }
-
-  /**
-   * When characters are in proximity to a tile it should light up.
-   *
-   * It's throttled just in case this is a very heavy computation.
-   */
-  generateTileColors = throttle((): void => {
-    const { character, characterManager } = this
-    const { characters } = characterManager
-    const tileColors: string[] = []
-    const charPos = character.position
-
-    initTilePositions.forEach((tilePos: Vector3Component) => {
-      let colorByte = 34
-
-      // get the distance of the viewing user to the tile
-      const characterDistance = distance(charPos, tilePos)
-
-      // calculate all remote users distances
-      const otherCharacterDistances: number[] = characters
-        .map(char => distance(char.position, tilePos))
-        .filter(num => num < 2)
-
-      /**
-       * The closer the more it should light up. The idea here is to
-       * keep incrementing it even if it goes over a valid byte.
-       *
-       * The result is then clamped to the byte value range we need.
-       */
-      if (characterDistance < 1) {
-        colorByte += 200
-      } else if (characterDistance < 2) {
-        colorByte += 100
-      } else if (characterDistance < 3) {
-        colorByte += 50
-      }
-
-      otherCharacterDistances.forEach(item => {
-        if (item < 1) {
-          colorByte += 200
-        } else if (item < 2) {
-          colorByte += 100
-        } else if (item < 3) {
-          colorByte += 50
-        }
-      })
-
-      // clamp
-      colorByte = clamp(colorByte, 34, 255)
-
-      // convert to hex
-      const hexByte = colorByte.toString(16)
-
-      // convert to hex color
-      const color = `#${hexByte}${hexByte}${hexByte}`
-
-      tileColors.push(color)
-    })
-
-    this.setState({ tileColors })
-  }, 100)
 
   /**
    * Draw the tiles 5x5 grid of 2x2 size
@@ -559,12 +557,12 @@ export default class WebsocketScene extends DCL.ScriptableScene<any, IState> {
    *
    * -Tony
    */
-  tiles(): DCL.ISimplifiedNode[] {
-    const { tileYs, tileColors } = this.state
+  public tiles(): DCL.ISimplifiedNode[] {
+    const { tileYs, tileColors } = this.state;
 
     return tileYs.map((y, index) => {
-      const { x, z } = initTilePositions[index]
-      const color = tileColors[index]
+      const { x, z } = initTilePositions[index];
+      const color = tileColors[index];
 
       return (
         <box
@@ -573,18 +571,18 @@ export default class WebsocketScene extends DCL.ScriptableScene<any, IState> {
           scale={tileScale}
           color={color}
         />
-      )
-    })
+      );
+    });
   }
 
   /**
    * Draw some boxes that allow the user to go change their username.
    */
-  usernameEditor(): DCL.ISimplifiedNode[] {
-    const { usernameInputText } = this.state
+  public usernameEditor(): DCL.ISimplifiedNode[] {
+    const { usernameInputText } = this.state;
 
     // let change = (evt: any) => console.log("evt", evt)
-    const save = () => this.setState({ usernameInputText })
+    const save = () => this.setState({ usernameInputText });
 
     // no onChange ☹️
     const textbox = (
@@ -598,7 +596,7 @@ export default class WebsocketScene extends DCL.ScriptableScene<any, IState> {
         background="#EEEEEE"
         focusedBackground="#FFFFFF"
       />
-    )
+    );
 
     const btn = (
       <box
@@ -608,7 +606,7 @@ export default class WebsocketScene extends DCL.ScriptableScene<any, IState> {
         color={signColor}
         onClick={save}
       />
-    )
+    );
 
     const btnText = (
       <text
@@ -626,16 +624,16 @@ export default class WebsocketScene extends DCL.ScriptableScene<any, IState> {
         shadowColor={textOutlineColor}
         onClick={save}
       />
-    )
+    );
 
-    return [textbox, btn, btnText]
+    return [textbox, btn, btnText];
   }
 
   /**
    * When the scene loads we use the opportunity to bind socket.io
    * and trigger some animations.
    */
-  sceneDidMount(): void {
+  public sceneDidMount(): void {
     const {
       socket,
       socketConnected,
@@ -648,12 +646,12 @@ export default class WebsocketScene extends DCL.ScriptableScene<any, IState> {
       characterRotation,
       frameworkPositionChanged,
       frameworkRotationChanged,
-      character
-    } = this
-    const { id, username } = character
-    const { connected } = socket
-    let transitionDelay = 100
-    const usernameInputText = username
+      character,
+    } = this;
+    const { id, username } = character;
+    const { connected } = socket;
+    let transitionDelay = 100;
+    const usernameInputText = username;
 
     /*
 
@@ -666,37 +664,37 @@ export default class WebsocketScene extends DCL.ScriptableScene<any, IState> {
     instance methods inside the event handler.
 
     */
-    socket.on("connect", socketConnected.bind(this))
-    socket.on("disconnect", socketDisconnected.bind(this))
-    socket.on("connect_error", socketError.bind(this))
-    socket.on("timeout", socketError.bind(this))
-    socket.on("error", socketError.bind(this))
-    socket.on("reconnect", socketReconnect.bind(this))
-    socket.on("character-join", characterJoin.bind(this))
-    socket.on("character-username", characterUsername.bind(this))
-    socket.on("character-position", characterPosition.bind(this))
-    socket.on("character-rotation", characterRotation.bind(this))
+    socket.on("connect", socketConnected.bind(this));
+    socket.on("disconnect", socketDisconnected.bind(this));
+    socket.on("connect_error", socketError.bind(this));
+    socket.on("timeout", socketError.bind(this));
+    socket.on("error", socketError.bind(this));
+    socket.on("reconnect", socketReconnect.bind(this));
+    socket.on("character-join", characterJoin.bind(this));
+    socket.on("character-username", characterUsername.bind(this));
+    socket.on("character-position", characterPosition.bind(this));
+    socket.on("character-rotation", characterRotation.bind(this));
 
     // framework events
-    this.subscribeTo("positionChanged", frameworkPositionChanged.bind(this))
-    this.subscribeTo("rotationChanged", frameworkRotationChanged.bind(this))
+    this.subscribeTo("positionChanged", frameworkPositionChanged.bind(this));
+    this.subscribeTo("rotationChanged", frameworkRotationChanged.bind(this));
 
-    this.setState({ connected, usernameInputText })
+    this.setState({ connected, usernameInputText });
 
     // schedule animations for each tile
     this.state.tileYs.forEach((_, tileIndex) => {
-      setTimeout(() => this.transitionTileDown(tileIndex), transitionDelay)
-      transitionDelay += 50
-    })
+      setTimeout(() => this.transitionTileDown(tileIndex), transitionDelay);
+      transitionDelay += 50;
+    });
 
     // keep-alive type thing
-    setInterval(() => this.socket.emit("character-ping", { id }), 5000)
+    setInterval(() => this.socket.emit("character-ping", { id }), 5000);
 
-    this.generateBillboardText()
+    this.generateBillboardText();
   }
 
-  sceneWillUnmount(): void {
-    this.part()
+  public sceneWillUnmount(): void {
+    this.part();
   }
 
   /**
@@ -705,7 +703,7 @@ export default class WebsocketScene extends DCL.ScriptableScene<any, IState> {
    * As you can see it's not necessary to draw all the entities
    * from inside the `render` function. They can be anywhere.
    */
-  async render() {
+  public async render() {
     return (
       <scene id="sample-sync-websockets-scene">
         {ghostMaterial}
@@ -718,6 +716,6 @@ export default class WebsocketScene extends DCL.ScriptableScene<any, IState> {
         {this.tiles()}
         {this.usernameEditor()}
       </scene>
-    )
+    );
   }
 }
