@@ -13,6 +13,13 @@ At this time Decentraland isn't rendering the avatars so imagine in this scene t
 
 ![diagram](./img/fig-diagram.png)
 
+## How to do this
+
++ [Docs](./docs/readme.md)
+  * [The Build System](./docs/build-system.md)
+  * [Synchronize Websockets](./docs/synchronize-websockets.md)
+  * [Proximity Activation Technique](./docs/proximity-activation.md)
+
 ---
 
 ## Install
@@ -41,6 +48,8 @@ Open the preview:
 `open http://127.0.0.1:8834`
 
 If you open it in multiple windows you can see the other players in the same scene.
+
+---
 
 ## Development
 
@@ -86,6 +95,8 @@ Configure to your preference:
 
 **Before commit try running the strict production sequence.**
 
+---
+
 ## Production
 
 Run through all the type and code checks then run the server in production mode.
@@ -111,6 +122,8 @@ npm run prd-compile-server
 # server (6-sec delay waiting for compile)
 npm run prd-server
 ```
+
+---
 
 ## Contribute
 
