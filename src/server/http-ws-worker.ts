@@ -2,66 +2,18 @@ import * as cluster from "cluster";
 import * as cors from "cors";
 import * as express from "express";
 import * as http from "http";
-import * as redis from "redis";
 import * as socketio from "socket.io";
-import { appKey, socketPath } from "../shared/config";
+import { CharacterManager } from "../shared/character-manager";
+import { socketPath } from "../shared/config";
 
-import {
-  CharacterManager,
-  ICharacterJoinEvent,
-  ICharacterPartEvent,
-  ICharacterPingEvent,
-  ICharacterPositionEvent,
-  ICharacterRotationEvent,
-  ICharacterUsernameEvent,
-} from "../shared/characters";
+const throttle = require("lodash/throttle");
 
-/**
- * Generic description of all the messages we're sending around
- */
-interface IBroadcastEvent {
-  evtName: string;
-  evt:
-    | ICharacterJoinEvent
-    | ICharacterPartEvent
-    | ICharacterUsernameEvent
-    | ICharacterPositionEvent
-    | ICharacterRotationEvent
-    | ICharacterPingEvent;
-}
-
-/**
- * The same as broadcast but with a worker id
- */
-interface IWorkerBroadcastEvent extends IBroadcastEvent {
-  workerId: string;
-}
-
-const {
-  HTTP_HOST = "127.0.0.1",
-  HTTP_PORT = "8835",
-  REDIS_HOST = "127.0.0.1",
-  REDIS_PORT = "6379",
-} = process.env;
-
+const { HTTP_HOST = "127.0.0.1", HTTP_PORT = "8835" } = process.env;
 const httpPort: number = parseInt(HTTP_PORT, 10);
-const redisPort: number = parseInt(REDIS_PORT, 10);
 const workerId: string = cluster.worker.id.toString();
 const expressApp: express.Application = express();
 const httpServer: http.Server = http.createServer(expressApp);
 const characterManager = new CharacterManager();
-
-// pub: send to the other nodes
-const pub = redis.createClient({
-  host: REDIS_HOST,
-  port: redisPort,
-});
-
-// sub: receive messages from the other nodes
-const sub = redis.createClient({
-  host: REDIS_HOST,
-  port: redisPort,
-});
 
 // socket.io: receive messages from browser clients
 const socketServer: socketio.Server = socketio(httpServer, {
@@ -69,15 +21,6 @@ const socketServer: socketio.Server = socketio(httpServer, {
   serveClient: false,
   transports: ["websocket"],
 });
-
-// watch for these events from the client and other nodes
-const socketEvents = [
-  "character-join",
-  "character-username",
-  "character-position",
-  "character-rotation",
-  "character-ping",
-];
 
 // we're communicating across different ports(origin) from the preview
 expressApp.use(cors());
@@ -99,20 +42,6 @@ function shutdown(code: number = 0): void {
     httpServer.close();
   } catch (e) {
     console.error("error closing http server", e);
-    exitCode = 1;
-  }
-
-  try {
-    pub.quit();
-  } catch (e) {
-    console.error("error closing redis pub", e);
-    exitCode = 1;
-  }
-
-  try {
-    sub.quit();
-  } catch (e) {
-    console.error("error closing redis sub", e);
     exitCode = 1;
   }
 
@@ -140,24 +69,111 @@ const socketError = (err: Error): void => console.error("socket error", err);
  * Each time a user connects it needs to relay all the messages around
  */
 function socketServerConnection(socket: socketio.Socket): void {
-  console.log("socket connection");
+  let characterId: string | undefined;
+  // console.log("socket connection", socket.id);
 
   socket.on("error", socketError);
 
-  // bind all the events
-  socketEvents.forEach((evtName) => {
-    // when a message comes in broadcast and persist state in memory
-    socket.on(evtName, (evt) => {
-      socketServer.emit(evtName, evt);
-      characterManager.emit(evtName, evt);
-      pub.publish(appKey, JSON.stringify({ workerId, evtName, evt }));
-    });
-  });
+  const introduceCharacters = throttle(() => {
+    // console.log("introduce", socket.id);
+    // when the user joins send them all the characters we know of
+    characterManager
+      .characterList()
+      .filter((item) => item.id !== characterId)
+      .forEach((char) => {
+        socket.emit("character-join", char);
+      });
+  }, 1000);
 
-  // when the user joins send them all the characters we know of
-  characterManager.characters.forEach((char) =>
-    socket.emit("character-join", char),
+  socket.on(
+    "disconnect",
+    (): void => {
+      if (characterId !== undefined) {
+        const partEvent = { id: characterId };
+        characterManager.characterPart(partEvent);
+        socketServer.emit("character-part", partEvent);
+      }
+    }
   );
+
+  socket.on(
+    "character-join",
+    (evt): void => {
+      const [success, error] = characterManager.characterJoin(evt);
+
+      if (success === true) {
+        // console.log("character join", evt);
+        const { id } = evt;
+        characterId = id;
+        socket.broadcast.emit("character-join", evt);
+        introduceCharacters();
+        return;
+      }
+
+      console.error("character join error", error, evt);
+    }
+  );
+
+  socket.on(
+    "character-username",
+    (evt): void => {
+      const [success, error] = characterManager.updateCharacterUsername(evt);
+
+      if (success === true) {
+        // console.log("character username", evt);
+        socket.broadcast.emit("character-username", evt);
+        return;
+      }
+
+      console.error("character username error", error, evt);
+    }
+  );
+
+  socket.on(
+    "character-position",
+    (evt): void => {
+      const [success, error] = characterManager.updateCharacterPosition(evt);
+
+      if (success === true) {
+        // console.log("character position", evt);
+        socket.broadcast.emit("character-position", evt);
+        return;
+      }
+
+      console.error("character position error", error, evt);
+    }
+  );
+
+  socket.on(
+    "character-rotation",
+    (evt): void => {
+      const [success, error] = characterManager.updateCharacterRotation(evt);
+
+      if (success === true) {
+        // console.log("character rotation", evt);
+        socket.broadcast.emit("character-rotation", evt);
+        return;
+      }
+
+      console.error("character rotation error", error, evt);
+    }
+  );
+
+  socket.on(
+    "character-ping",
+    (evt): void => {
+      const [success, error] = characterManager.ping(evt);
+
+      if (success === true) {
+        // console.log("character ping", evt);
+        return;
+      }
+
+      console.error("character ping error", error, evt);
+    }
+  );
+
+  socket.on("introduce", () => introduceCharacters());
 }
 
 /**
@@ -165,28 +181,6 @@ function socketServerConnection(socket: socketio.Socket): void {
  */
 function socketServerError(err: Error): void {
   console.error("socket.io server error", err);
-}
-
-/**
- * Event handler for when subscribed messages arrive on this process
- */
-function subMessage(channel: string, msg: string): void {
-  let workerMessage: IWorkerBroadcastEvent;
-
-  try {
-    workerMessage = JSON.parse(msg);
-  } catch (err) {
-    return console.error("error parsing worker message", err);
-  }
-
-  if (workerMessage.workerId === workerId) {
-    return; /* console.log("skipped same proccess msg", workerId)*/
-  }
-
-  const { evtName, evt } = workerMessage;
-
-  socketServer.emit(evtName, evt);
-  characterManager.emit(evtName, evt);
 }
 
 //
@@ -197,20 +191,8 @@ httpServer.listen(httpPort, HTTP_HOST, httpServerListening);
 //
 // socket events
 //
-socketServer.on("connection", socketServerConnection);
+socketServer.on("connect", socketServerConnection);
 socketServer.on("error", socketServerError);
-
-//
-// redis publisher events
-//
-pub.on("error", (err) => console.error("pub error", err));
-
-//
-// redis subcriber events
-//
-sub.subscribe(appKey);
-sub.on("error", (err) => console.error("sub error", err));
-sub.on("message", subMessage);
 
 //
 // graceful shutdown

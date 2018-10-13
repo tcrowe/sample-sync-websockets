@@ -6,7 +6,7 @@ Forks:
 */
 
 import * as cluster from "cluster";
-import * as os from "os";
+// import * as os from "os";
 
 if (cluster.isMaster === true) {
   //
@@ -14,7 +14,7 @@ if (cluster.isMaster === true) {
   //
 
   // for each cpu run a websocket process
-  os.cpus().forEach((cpu) => cluster.fork({ WORKER_TYPE: "ws" }));
+  cluster.fork({ WORKER_TYPE: "ws" });
 
   // but only run one preview process
   cluster.fork({ WORKER_TYPE: "preview" });

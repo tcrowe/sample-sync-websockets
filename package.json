@@ -6,18 +6,17 @@
   "dependencies": {
     "@types/cors": "^2.8.4",
     "@types/express": "^4.16.0",
-    "@types/lodash": "^4.14.116",
-    "@types/redis": "^2.8.6",
+    "@types/lodash": "^4.14.117",
     "@types/socket.io": "^1.4.38",
     "@types/socket.io-client": "^1.4.32",
     "cors": "^2.8.4",
     "decentraland": "^1.4.0",
     "decentraland-api": "^4.1.1",
     "decentraland-rpc": "^3.0.0",
-    "express": "^4.16.3",
+    "express": "^4.16.4",
     "nodemon": "^1.18.4",
     "npm-run-all": "^4.1.3",
-    "redis": "^2.8.0",
+    "prettier": "^1.14.3",
     "socket.io": "^2.1.1",
     "socket.io-client": "^2.1.1",
     "tslint": "^5.11.0"
@@ -31,11 +30,13 @@
     "dev-compile-server": "decentraland-compiler build-server.json --watch || true",
     "dev-server": "sleep 6 && nodemon -q -L -d 1 -w dist/server -w dist/shared dist/server/index.js || true",
     "dev": "run-p setup dev-*",
-    "prd-tslint-scene": "tslint --config tslint.json --project src/scene/tsconfig.json",
-    "prd-tslint-server": "tslint --config tslint.json --project src/server/tsconfig.json",
+    "prd-prettier": "prettier --write src/**/*.{ts,tsx}",
+    "prd-tslint-scene": "tslint --config tslint.json --fix --project src/scene/tsconfig.json",
+    "prd-tslint-server": "tslint --config tslint.json --fix --project src/server/tsconfig.json",
     "prd-compile-scene": "NODE_ENV=production decentraland-compiler build-scene.json",
     "prd-compile-server": "NODE_ENV=production decentraland-compiler build-server.json",
     "prd-server": "NODE_ENV=production node dist/server/index.js",
     "prd": "run-s clean setup prd-* && run-p server-*"
-  }
+  },
+  "devDependencies": {}
 }

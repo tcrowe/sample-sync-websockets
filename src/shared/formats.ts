@@ -22,23 +22,19 @@ export const randomId = (): string => {
 /**
  * True if valid id
  */
-export const isValidId = (id?: string): boolean =>
-  id !== undefined && id !== null && validIdPattern.test(id) === true;
+export const isValidId = (id: string): boolean =>
+  validIdPattern.test(id) === true;
 
 /**
  * Check if the user input is a valid username
  */
-export const isValidUsername = (username?: string): boolean =>
-  username !== undefined &&
-  username !== null &&
+export const isValidUsername = (username: string): boolean =>
   validUsernamePattern.test(username) === true;
 
 /**
  * An actual JS number excluding NaN and Intinity
  */
-export const isValidNumber = (num?: number | string) =>
-  num !== undefined &&
-  num !== null &&
+export const isValidNumber = (num: number) =>
   // numeric
   isNumber(num) === true &&
   // not infinity, not NaN
@@ -47,10 +43,7 @@ export const isValidNumber = (num?: number | string) =>
 /**
  * True when the value is a number within our configured bounds
  */
-export const isValidBoundedNumber = (num?: number | string): boolean =>
-  // the number is valid
-  num !== undefined &&
-  num !== null &&
+export const isValidBoundedNumber = (num: number): boolean =>
   isValidNumber(num) === true &&
   // and it's within our square
   num >= boundsMin &&
@@ -59,14 +52,18 @@ export const isValidBoundedNumber = (num?: number | string): boolean =>
 /**
  * Returns true if the Vector3Component has valid coordinates
  */
-export function isValidVector3Component(v3?: Vector3Component): boolean {
-  if (v3 === undefined || v3 === null) {
-    return false;
-  }
+export const isValidVector3Component = (v3: Vector3Component): boolean =>
+  isValidNumber(v3.x) === true &&
+  isValidNumber(v3.y) === true &&
+  isValidNumber(v3.z) === true;
 
-  const { x, y, z } = v3;
-  return [x, y, z].every((num) => isValidNumber(num)) === true;
-}
+/**
+ * Validates a Vector3Component as being in bounds
+ */
+export const isValidBoundedVector3Component = (v3: Vector3Component): boolean =>
+  isValidBoundedNumber(v3.x) === true &&
+  isValidBoundedNumber(v3.y) === true &&
+  isValidBoundedNumber(v3.z) === true;
 
 /**
  * Clamp a number to the configured bounds

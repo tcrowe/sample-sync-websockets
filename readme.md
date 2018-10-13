@@ -16,10 +16,6 @@ At this time Decentraland isn't rendering the avatars so imagine in this scene t
   * `choco install nodejs`
   * https://github.com/nodesource/distributions
   * https://github.com/creationix/nvm
-+ Install Redis
-  * `brew install redis`
-  * `choco install redis`
-  * `apt-get install redis-server -y`
 
 ```sh
 git clone https://github.com/tcrowe/sample-sync-websockets.git

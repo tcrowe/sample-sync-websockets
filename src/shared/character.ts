@@ -8,15 +8,8 @@ import { randomId } from "./formats";
 export class Character {
   public id: string = randomId();
   public username: string = "";
-  public playerHeight: number = 0;
 
   public position: Vector3Component = {
-    x: 0,
-    y: 0,
-    z: 0,
-  };
-
-  public cameraPosition: Vector3Component = {
     x: 0,
     y: 0,
     z: 0,

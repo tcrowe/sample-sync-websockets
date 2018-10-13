@@ -10,7 +10,7 @@ shared values by:
 /**
  * Many strings and event keys can use this to keep in sync
  */
-const appKey: string = "sample-sync-websockets";
+export const appKey: string = "sample-sync-websockets";
 
 /**
  * The socket.io client uses this specific key rather than /socket.io
@@ -18,30 +18,21 @@ const appKey: string = "sample-sync-websockets";
  * Maybe this basic trick will fool some nefarious elements trying to
  * mess with it.
  */
-const socketPath: string = `/${appKey}`;
+export const socketPath: string = `/${appKey}`;
 
 /**
  * The socket.io client connects to a different port than the preview
  */
-const socketPort: string = "8835";
+export const socketHost = "http://127.0.0.1:8835";
 
 /**
  * The min-max ranges {x,y,z} the players can go and have their actions
  * transmitted.
  */
-const boundsMin: number = -10;
-const boundsMax: number = 10;
+export const boundsMin: number = 0;
+export const boundsMax: number = 10;
 
 /**
  * Remember characters for this long when they go idle
  */
-const characterIdleMs: number = 60000; // 1min in milliseconds
-
-export {
-  appKey,
-  socketPath,
-  socketPort,
-  boundsMin,
-  boundsMax,
-  characterIdleMs,
-};
+export const characterIdleMs: number = 60000; // 1min in milliseconds

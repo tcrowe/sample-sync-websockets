@@ -16,58 +16,152 @@ import {
   ICharacterPositionEvent,
   ICharacterRotationEvent,
   ICharacterUsernameEvent,
-} from "../shared/characters";
-import { socketPath, socketPort } from "../shared/config";
-import { clampNumber, clampVector3 } from "../shared/formats";
+} from "../shared/character-manager";
+import { socketHost, socketPath } from "../shared/config";
+import { isValidBoundedVector3Component } from "../shared/formats";
 
-const isObject = require("lodash/isObject");
-const padEnd = require("lodash/padEnd");
 const clamp = require("lodash/clamp");
+const padEnd = require("lodash/padEnd");
 const throttle = require("lodash/throttle");
+const random = require("lodash/random");
 
-/**
- * The tiles are all 2x2 spaces
- */
-const tileScale: Vector3Component = { x: 2, y: 0.1, z: 2 };
-const defaultTileColor = "#222222";
+export interface IState {
+  billboardText: string;
+  connected: boolean;
+  doorPosition: Vector3Component;
+  doorTransition: any; // this wont work as TransitionComponent 🤷‍
+  leftWallPosition: Vector3Component;
+  reconnects: number;
+  rightWallPosition: Vector3Component;
+  socketErrors: Error[];
+  tileColors: string[];
+  tilePositions: Vector3Component[];
+  usernameInputText: string;
+}
+
+//
+// the "ghost" is a placeholder for the other players until there is an
+// avatar to show where they are
+//
 
 const ghostArc = 170;
 const ghostRadius = 0.6;
 const ghostScale = { x: 1, y: 0.5, z: 1 };
+const ghostColor = "#EFEFEF";
+
+const ghostMaterial = (
+  <material
+    id="ghost-material"
+    alpha={0.3}
+    ambientColor={ghostColor}
+    albedoColor={ghostColor}
+    reflectivityColor={ghostColor}
+    hasAlpha={true}
+    transparencyMode={2}
+  />
+);
+
+//
+// use the same text for everything
+//
 
 const textFontFamily = "monospace";
 const textColor = "#FFFFFF";
 const textOutlineColor = "#000000";
 const textOutlineWidth = 1;
 
+//
+// "sign" is like the billboard or other UI in the scene
+//
+
+const signColor = "#000510";
+
+const signMaterial = (
+  <material
+    id="sign-material"
+    ambientColor={signColor}
+    albedoColor={signColor}
+    reflectivityColor={signColor}
+    hasAlpha={false}
+  />
+);
+
+//
+// the grid tiles on the ground are 5x5 of 2x2 tiles
+//
+
 const gridMin = 0;
 const gridMax = 5;
 
-const signColor = "#001133";
+//
+// tiles are 2x2 flat boxes on the ground which light up in proximity
+// to characters going near it
+//
 
-const initTilePositions: Vector3Component[] = [];
-const initTileColors: string[] = [];
-const initTileYs: number[] = [];
+const tileColor = "#222222";
+const tileScale: Vector3Component = { x: 2, y: 0.1, z: 2 };
+const defaultTilePositions: Vector3Component[] = [];
+const defaultTileY = 10;
+const defaultTileColors: string[] = [];
 
-const ghostMaterial = (
+const tileTransition = {
+  color: {
+    duration: 500,
+    // timing: "linear",
+  },
+  position: {
+    duration: 700,
+    // timing: "ease-out",
+  },
+};
+
+//
+// walls are next to the door near where the player spawns
+//
+
+const wallScale = { x: 4, y: 3, z: 0.03 };
+
+const wallMaterial = (
   <material
-    id="ghost-material"
-    alpha={0.2}
-    ambientColor="#EFEFEF"
-    albedoColor="#EFEFEF"
-    reflectivityColor="#EFEFEF"
+    id="wall-material"
+    alpha={0.99}
+    ambientColor={signColor}
+    albedoColor={signColor}
+    reflectivityColor={signColor}
     hasAlpha={true}
     transparencyMode={2}
   />
 );
 
-const signMaterial = (
+const wallTransition = {
+  position: {
+    duration: 1000,
+  },
+};
+
+//
+// the door is in between the walls near where the player spawns
+//
+
+const doorMaterial = (
   <material
-    id="sign-material"
+    id="door-material"
+    alpha={0.6}
+    ambientColor={signColor}
     albedoColor={signColor}
     reflectivityColor={signColor}
+    hasAlpha={true}
+    transparencyMode={2}
   />
 );
+
+const doorClosedX = 5;
+const doorOpenX = 3;
+const doorScale = { x: 2.01, y: 3, z: 0.01 };
+
+//
+// the "billboard" shows which players are in the scene
+//
 
 const billboardBackgroundBox = (
   <box
@@ -79,57 +173,18 @@ const billboardBackgroundBox = (
   />
 );
 
-const usernameEditorBackgroundBox = (
-  <box
-    id="username-editor-background"
-    position={{ x: 4, y: 1.5, z: 9.8 }}
-    scale={{ x: 2, y: 1, z: 0.01 }}
-    material="#sign-material"
-  />
-);
-
-const usernameEditorLabel = (
-  <text
-    id="billboard-text"
-    position={{ x: 4, y: 1.8, z: 9.75 }}
-    outlineWidth={textOutlineWidth}
-    outlineColor={textOutlineColor}
-    color={textColor}
-    fontFamily={textFontFamily}
-    fontSize={48}
-    value="Change username"
-    shadowBlur={3}
-    shadowOffsetX={3}
-    shadowOffsetY={3}
-    shadowColor={textOutlineColor}
-  />
-);
-
-interface IState {
-  connected: boolean;
-  socketErrors: Error[];
-  reconnects: number;
-  tileYs: number[];
-  tileColors: string[];
-  usernameInputText: string;
-  billboardText: string;
-}
-
-// the socket.io client connects somewhere else than where this scene is
-// it's configurable within ../shared/config.ts
-const { origin } = location;
-const socketHost: string = origin.replace(/\d{1,}$/, socketPort);
-
+/**
+ * Instantiate the tiles just above the board
+ */
 for (let a = gridMin; a < gridMax; a += 1) {
   for (let b = gridMin; b < gridMax; b += 1) {
-    const position: Vector3Component = {
+    defaultTilePositions.push({
       x: a * 2 + 1,
-      y: 1,
+      y: defaultTileY,
       z: b * 2 + 1,
-    };
-    initTilePositions.push(position);
-    initTileColors.push(defaultTileColor);
-    initTileYs.push(1);
+    });
+
+    defaultTileColors.push(tileColor);
   }
 }
 
@@ -144,36 +199,52 @@ function distance(pos1: Vector3Component, pos2: Vector3Component): number {
   return Math.sqrt(a * a + b * b);
 }
 
+/**
+ * Returns true if the character is inside the configured bounds, 0 to 10
+ *
+ * See ../shared/config.ts
+ */
+const charInBounds = (char: Character) =>
+  isValidBoundedVector3Component(char.position) === true;
+
+//
+// CharacterManager holds information about the other characters
+//
+const characterManager = new CharacterManager();
+
 export default class WebsocketScene extends DCL.ScriptableScene<any, IState> {
-  /*
-  I tried putting complex objects into this state representing objects
-  with all the character's data. It was unable to update. Instead only
-  simple types are in the IState object. More complex ones are outside it.
-  -Tony
-  */
   public state: IState = {
     billboardText: "",
     connected: false,
+    doorPosition: { x: 5, y: 10, z: 0.5 },
+    doorTransition: {
+      position: {
+        duration: 1000,
+      },
+    },
+    leftWallPosition: { x: 2, y: 10, z: 0.5 },
     reconnects: 0,
+    rightWallPosition: { x: 8, y: 10, z: 0.5 },
     socketErrors: [],
-    tileColors: initTileColors,
-    tileYs: initTileYs,
+    tileColors: defaultTileColors,
+    tilePositions: defaultTilePositions,
     usernameInputText: "",
   };
 
   // representing the viewer of this scene
-  public character = new Character();
-
-  // other players around the network
-  public characterManager = new CharacterManager();
+  private character = new Character();
 
   // socket.io must uses CORS to connect across origins
-  // this object connects on a different port
-  public socket = io(socketHost, {
-    jsonp: false, // jsonp is impossible in this context
-    path: socketPath, // with a specific URI
-    reconnectionAttempts: 30, // give up after failing too many times
-    transports: ["websocket"], // only use websockets, not polling
+  private socket = io(socketHost, {
+    autoConnect: false,
+    // jsonp is impossible in this context
+    jsonp: false,
+    // with a specific URI
+    path: socketPath,
+    // give up after failing too many times
+    reconnectionAttempts: 30,
+    // only use websockets, not polling
+    transports: ["websocket"],
   });
 
   /**
@@ -181,21 +252,24 @@ export default class WebsocketScene extends DCL.ScriptableScene<any, IState> {
    *
    * It's throttled just in case this is a very heavy computation.
    */
-  public generateTileColors = throttle((): void => {
-    const { character, characterManager } = this;
-    const { characters } = characterManager;
-    const tileColors: string[] = [];
+  private generateTileColors = throttle((): void => {
+    const { character, state } = this;
+    let { tileColors } = state;
+    const { tilePositions } = state;
     const charPos = character.position;
 
-    initTilePositions.forEach((tilePos: Vector3Component) => {
+    tileColors = tileColors.map((existingColor, index) => {
+      const tilePos = tilePositions[index];
       let colorByte = 34;
 
       // get the distance of the viewing user to the tile
       const characterDistance = distance(charPos, tilePos);
 
       // calculate all remote users distances
-      const otherCharacterDistances: number[] = characters
-        .map((char) => distance(char.position, tilePos))
+      const otherCharacterDistances: number[] = characterManager
+        .characterList()
+        .filter(charInBounds)
+        .map((otherChar) => distance(otherChar.position, tilePos))
         .filter((num) => num < 2);
 
       /**
@@ -228,26 +302,337 @@ export default class WebsocketScene extends DCL.ScriptableScene<any, IState> {
       // convert to hex
       const hexByte = colorByte.toString(16);
 
-      // convert to hex color
-      const color = `#${hexByte}${hexByte}${hexByte}`;
-
-      tileColors.push(color);
+      // convert to monochrome hex color
+      return `#${hexByte}${hexByte}${hexByte}`;
     });
 
     this.setState({ tileColors });
   }, 100);
 
   /**
+   * Open the door if any players are near it.
+   */
+  private triggerAutomaticDoor = throttle((): void => {
+    const { character, state } = this;
+    let { doorPosition } = state;
+    const { x, y, z } = doorPosition;
+    const isOpen = x === doorOpenX;
+
+    // Q: Why change the activation distance?
+    // A: Because the door can be farther away when it's open!
+    const activateDistance = isOpen === true ? 4 : 3;
+
+    // get the distance of the viewing user to the tile
+    const characterDistance = distance(character.position, doorPosition);
+
+    // calculate all remote users distances
+    const otherCharacterDistances: number[] = characterManager
+      .characterList()
+      .filter(charInBounds)
+      .map((otherChar) => distance(otherChar.position, doorPosition))
+      .filter((num) => num < activateDistance);
+
+    // is the viewing player close enough?
+    // are any network players close enough?
+    const closeEnough =
+      characterDistance < activateDistance ||
+      otherCharacterDistances.length > 0;
+
+    // close it if not closed
+    if (closeEnough === false && x !== doorClosedX) {
+      doorPosition = {
+        x: doorClosedX,
+        y,
+        z,
+      };
+      this.setState({ doorPosition });
+    }
+
+    // open it if not open
+    if (closeEnough === true && x !== doorOpenX) {
+      doorPosition = {
+        x: doorOpenX,
+        y,
+        z,
+      };
+      return this.setState({ doorPosition });
+    }
+  }, 100);
+
+  /**
+   * Sometimes a character sends coordinates but a client doesn't know who
+   * they are yet. This will signal it needs to be introduced to whoever
+   * is missing from the scene.
+   */
+  private introduce = throttle(() => {
+    // console.log("introduce");
+    this.socket.emit("introduce");
+  }, 1000);
+
+  /**
+   * Set the billboard text, change tile colors, and see if we need to
+   * open or close the door. It's throttled so it wont crush the CPU
+   * or try to draw too many things into the scene breaking it.
+   */
+  private eventUpdate = throttle(() => {
+    this.generateBillboardText();
+    this.generateTileColors();
+    this.triggerAutomaticDoor();
+  }, 200);
+
+  public sceneDidUnmount(): void {
+    this.part();
+  }
+
+  /**
+   * When the scene loads we use the opportunity to bind socket.io
+   * and trigger some animations.
+   */
+  public sceneDidMount(): void {
+    const {
+      socket,
+      socketConnected,
+      socketError,
+      socketDisconnected,
+      socketReconnect,
+      characterJoin,
+      characterPart,
+      characterUsername,
+      characterPosition,
+      characterRotation,
+      frameworkPositionChanged,
+      frameworkRotationChanged,
+      character,
+    } = this;
+    const { id, username } = character;
+    const { connected } = socket;
+    const usernameInputText = username;
+
+    /*
+
+    Why `.bind(this)` ?
+
+    socket.io doesn't know where it's coming from or that we need
+    to have `this` inside each of the event handlers.
+
+    By binding `this` on it we can access state and other
+    instance methods inside the event handler.
+
+    */
+    socket.on("connect", socketConnected.bind(this));
+    socket.on("disconnect", socketDisconnected.bind(this));
+    socket.on("connect_error", socketError.bind(this));
+    socket.on("connect_timeout", socketError.bind(this));
+    socket.on("error", socketError.bind(this));
+    socket.on("reconnect", socketReconnect.bind(this));
+    socket.on("reconnect_attempt", socketReconnect.bind(this));
+    socket.on("reconnecting", socketReconnect.bind(this));
+    socket.on("reconnect_error", socketError.bind(this));
+    socket.on("reconnect_failed", socketError.bind(this));
+    socket.on("character-join", characterJoin.bind(this));
+    socket.on("character-part", characterPart.bind(this));
+    socket.on("character-username", characterUsername.bind(this));
+    socket.on("character-position", characterPosition.bind(this));
+    socket.on("character-rotation", characterRotation.bind(this));
+
+    // autoConnect is disabled so we can wire up the events before
+    // anything gets sent here
+    socket.connect();
+
+    // decentraland framework events
+    // this is how we know how to tell the server where we are
+    this.subscribeTo("positionChanged", frameworkPositionChanged.bind(this));
+    this.subscribeTo("rotationChanged", frameworkRotationChanged.bind(this));
+
+    this.setState({ connected, usernameInputText });
+
+    // We do a keep-alive type action so the server doesn't remove us
+    setInterval(() => this.socket.emit("character-ping", { id }), 5000);
+
+    // move the tiles down
+    this.transitionTilesDown();
+
+    // move the walls and door down
+    setTimeout(() => this.transitionAutomaticDoorDown(), 1000);
+  }
+
+  /**
+   * Draw the scene.
+   *
+   * As you can see it's not necessary to draw all the entities
+   * from inside the `render` function. They can come from functions.
+   */
+  public async render() {
+    return (
+      <scene id="sample-sync-websockets-scene">
+        {ghostMaterial}
+        {signMaterial}
+        {wallMaterial}
+        {doorMaterial}
+        {billboardBackgroundBox}
+        {this.drawUsernameBillboard()}
+        {this.drawCharacterBoxes()}
+        {this.drawTiles()}
+        {this.drawAutomaticDoor()}
+      </scene>
+    );
+  }
+
+  /**
+   * When the scene loads it will drop in the door and walls.
+   */
+  private transitionAutomaticDoorDown(): void {
+    const y = wallScale.y / 2;
+
+    // transition left wall down
+    setTimeout(() => {
+      const { x, z } = this.state.leftWallPosition;
+      const leftWallPosition = { x, y, z };
+      this.setState({ leftWallPosition });
+    }, random(100, 800));
+
+    // transition right wall down
+    setTimeout(() => {
+      const { x, z } = this.state.rightWallPosition;
+      const rightWallPosition = { x, y, z };
+      this.setState({ rightWallPosition });
+    }, random(100, 800));
+
+    // transition door down
+    setTimeout(() => {
+      const { x, z } = this.state.doorPosition;
+      const doorPosition = { x, y, z };
+      this.setState({ doorPosition });
+    }, random(100, 800));
+
+    // change door transition speed to be faster after it lands
+    setTimeout(() => {
+      const doorTransition = {
+        position: {
+          duration: 100,
+        },
+      };
+
+      this.setState({ doorTransition });
+    }, 2000);
+  }
+
+  /**
+   * When the scene loads move all the tiles down to the ground.
+   */
+  private transitionTilesDown(): void {
+    // start dropping down the tiles
+    // schedule the transition for each tile randomly
+    this.state.tilePositions.forEach((position1, index1) => {
+      setTimeout(() => {
+        let { tilePositions } = this.state;
+
+        // copy the whole array
+        tilePositions = tilePositions.map((position2, index2) => {
+          if (index1 === index2) {
+            // but only modify this one
+            const { x, z } = position2;
+            const y = 0;
+            return { x, y, z };
+          }
+
+          return position2;
+        });
+
+        // save `tilePositions` triggering the transition
+        this.setState({ tilePositions });
+      }, random(200, 1000));
+    });
+  }
+
+  /**
+   * The tile positions and color are stored in the state. This will
+   * create entities for each tile and draw it into the scene when called.
+   */
+  private drawTiles(): DCL.ISimplifiedNode[] {
+    const { tilePositions, tileColors } = this.state;
+
+    return tilePositions.map((position: Vector3Component, index: number) => (
+      <box
+        id={`box-${index}`}
+        position={position}
+        scale={tileScale}
+        color={tileColors[index]}
+        transition={tileTransition}
+      />
+    ));
+  }
+
+  /**
+   * The automatic door opens and closes depending on where other players
+   * are moving around in the scene.
+   */
+  private drawAutomaticDoor(): DCL.ISimplifiedNode[] {
+    const {
+      leftWallPosition,
+      rightWallPosition,
+      doorPosition,
+      doorTransition,
+    } = this.state;
+
+    // the wall to the left when the user spawns
+    const leftWall = (
+      <box
+        id="automatic-door-wall-left"
+        material="#wall-material"
+        position={leftWallPosition}
+        scale={wallScale}
+        transition={wallTransition}
+      />
+    );
+
+    // and to the right
+    const rightWall = (
+      <box
+        id="automatic-door-wall-right"
+        material="#wall-material"
+        position={rightWallPosition}
+        scale={wallScale}
+        transition={wallTransition}
+      />
+    );
+
+    // the door slides open or closed based on state
+    // the transition is dynamic as well
+    const slidingDoor = (
+      <box
+        id="automatic-door-sliding-door"
+        material="#door-material"
+        position={doorPosition}
+        scale={doorScale}
+        transition={doorTransition}
+      />
+    );
+
+    return [leftWall, rightWall, slidingDoor];
+  }
+
+  /**
    * There is a billboard in the scene. This builds a 3-column text
    * view of all the character names.
    */
-  public generateBillboardText(): void {
-    const { character, characterManager } = this;
-    const { characters } = characterManager;
-    const usernames: string[] = characters.map((item) => item.username);
+  private generateBillboardText(): void {
+    const { character } = this;
+    const usernames: string[] = characterManager
+      .characterList()
+      .map((item) => item.username);
     const playerCount = usernames.length + 1;
     let row: string[] = [];
-    let billboardText = `players (${playerCount}):\n-------`;
+    const { connected, reconnects } = this.state;
+    const connectedText = connected === true ? "Connected" : "Disconnected";
+    const reconnectsText = `Reconnects: ${reconnects}`;
+    const playersText = `Players (${playerCount})`;
+
+    let billboardText = [connectedText, reconnectsText, playersText].join(
+      " | "
+    );
+
+    billboardText += "\n---------------------------------------";
 
     // the viewing user is first
     row.push(padEnd(character.username, 20));
@@ -277,17 +662,17 @@ export default class WebsocketScene extends DCL.ScriptableScene<any, IState> {
   /**
    * Announce to the server that we're here
    */
-  public join(): void {
-    // console.log("join")
+  private join(): void {
+    // console.log("join");
     const { character } = this;
     const { id, username, position, rotation } = character;
     this.socket.emit("character-join", { id, username, position, rotation });
   }
 
   /**
-   * Leave the scene
+   * If possible before closing out the tab send a part message.
    */
-  public part(): void {
+  private part(): void {
     const { id } = this.character;
     this.socket.emit("character-part", { id });
   }
@@ -296,25 +681,25 @@ export default class WebsocketScene extends DCL.ScriptableScene<any, IState> {
   // socket.io events
   //
 
-  public socketConnected(): void {
-    // console.log("socket connected")
+  private socketConnected(): void {
+    // console.log("socket connected");
     this.setState({ connected: true });
     this.join();
   }
 
-  public socketDisconnected(): void {
-    // console.error("socket disconnected")
+  private socketDisconnected(): void {
+    // console.error("socket disconnected");
     this.setState({ connected: false });
   }
 
-  public socketError(err: Error): void {
+  private socketError(err: Error): void {
     console.error("socket error", err);
     const { socketErrors } = this.state;
     socketErrors.push(err);
     this.setState({ socketErrors });
   }
 
-  public socketReconnect(): void {
+  private socketReconnect(): void {
     console.warn("socket reconnect");
     let { reconnects } = this.state;
     reconnects += 1;
@@ -325,105 +710,102 @@ export default class WebsocketScene extends DCL.ScriptableScene<any, IState> {
   /**
    * Other characters have joined and will now be rendered in the scene
    */
-  public characterJoin(joinEvent: ICharacterJoinEvent): void {
-    if (isObject(joinEvent) === true && joinEvent.id === this.character.id) {
-      // skip this event if the character is the viewer
+  private characterJoin(joinEvent: ICharacterJoinEvent): void {
+    const [success, error] = characterManager.characterJoin(joinEvent);
+
+    if (success === true) {
+      this.eventUpdate();
       return;
     }
 
-    const { characterManager } = this;
-    characterManager.characterJoin(joinEvent);
-    this.forceUpdate();
-    this.generateBillboardText();
+    console.error("character join error", error);
+    this.introduce();
   }
 
-  public characterPart(partEvent: ICharacterPartEvent): void {
-    this.characterManager.characterPart(partEvent);
-    this.forceUpdate();
-    this.generateBillboardText();
+  private characterPart(partEvent: ICharacterPartEvent): void {
+    const [success, error] = characterManager.characterPart(partEvent);
+
+    if (success === true) {
+      this.eventUpdate();
+      return;
+    }
+
+    console.error("character part error", error);
+    this.introduce();
   }
 
   /**
    * A character changed their username
+   *
+   * It's disabled until we figure out how to use textboxes
    */
-  public characterUsername(usernameEvent: ICharacterUsernameEvent): void {
-    if (
-      isObject(usernameEvent) === true &&
-      usernameEvent.id === this.character.id
-    ) {
-      // skip this event if the character is the viewer
+  private characterUsername(usernameEvent: ICharacterUsernameEvent): void {
+    const [success, error] = characterManager.updateCharacterUsername(
+      usernameEvent
+    );
+
+    if (success === true) {
+      this.eventUpdate();
       return;
     }
 
-    const { characterManager } = this;
-    characterManager.updateCharacterUsername(usernameEvent);
-    this.forceUpdate();
-    this.generateBillboardText();
+    console.error("character username error", error);
+    this.introduce();
   }
 
   /**
    * This event is triggered when other users move around their scene. Their
    * position gets broadcast to everyone.
    */
-  public characterPosition(positionEvent: ICharacterPositionEvent): void {
-    if (
-      isObject(positionEvent) === true &&
-      positionEvent.id === this.character.id
-    ) {
-      // skip this event if the character is the viewer
+  private characterPosition(positionEvent: ICharacterPositionEvent): void {
+    const [success, error] = characterManager.updateCharacterPosition(
+      positionEvent
+    );
+
+    if (success === true) {
+      this.eventUpdate();
       return;
     }
 
-    this.characterManager.updateCharacterPosition(positionEvent);
-    this.forceUpdate();
+    console.error("character position error", error);
+    this.introduce();
   }
 
   /**
    * The rotation is broadcast any time they swivel around their camera.
    */
-  public characterRotation(rotationEvent: ICharacterRotationEvent): void {
-    if (
-      isObject(rotationEvent) === true &&
-      rotationEvent.id === this.character.id
-    ) {
-      // skip this event if the character is the viewer
+  private characterRotation(rotationEvent: ICharacterRotationEvent): void {
+    const [success, error] = characterManager.updateCharacterRotation(
+      rotationEvent
+    );
+
+    if (success === true) {
+      this.eventUpdate();
       return;
     }
 
-    this.characterManager.updateCharacterRotation(rotationEvent);
-    this.forceUpdate();
-    this.generateTileColors();
+    console.error("character rotation error", error);
+    this.introduce();
   }
 
   /**
    * This is a Decentraland event triggered when the user moves. It's broadcast
    * to the server so everyone can see.
    */
-  public frameworkPositionChanged(evt: DCL.IEvents["positionChanged"]): void {
+  private frameworkPositionChanged(evt: DCL.IEvents["positionChanged"]): void {
     const { socket, character } = this;
     const { id } = character;
-    let { position, cameraPosition, playerHeight } = evt;
-
-    position = clampVector3(position);
-    cameraPosition = clampVector3(cameraPosition);
-    playerHeight = clampNumber(playerHeight);
-
-    socket.emit("character-position", {
-      cameraPosition,
-      id,
-      playerHeight,
-      position,
-    });
-
+    const { position } = evt;
+    socket.emit("character-position", { id, position });
     this.character.position = position;
-    this.generateTileColors();
+    this.eventUpdate();
   }
 
   /**
    * When the user rotates around the view it will be broadcast. This
    * allows us to see where they are looking.
    */
-  public frameworkRotationChanged(evt: DCL.IEvents["rotationChanged"]): void {
+  private frameworkRotationChanged(evt: DCL.IEvents["rotationChanged"]): void {
     const { socket, character } = this;
     const { id } = character;
     const { rotation } = evt;
@@ -434,29 +816,28 @@ export default class WebsocketScene extends DCL.ScriptableScene<any, IState> {
    * Draw a billboard with all the user's name on it. It's tilted down
    * so they can see it from below.
    */
-  public playersBillboard(): DCL.ISimplifiedNode {
-    const { billboardText } = this.state;
-
+  private drawUsernameBillboard(): DCL.ISimplifiedNode {
     return (
       <text
         id="billboard-text"
-        position={{ x: 4.1, y: 3.8, z: 9.1 }}
+        position={{ x: 4, y: 3.95, z: 9 }}
         rotation={{ x: -50, y: 0, z: 0 }}
         outlineWidth={textOutlineWidth}
         outlineColor={textOutlineColor}
         color={textColor}
         fontFamily={textFontFamily}
         fontSize={48}
-        value={billboardText}
+        value={this.state.billboardText}
         lineSpacing="1.3"
         textWrapping={false}
         hAlign="left"
         vAlign="top"
-        width={4}
-        height={1.5}
-        shadowBlur={3}
-        shadowOffsetX={3}
-        shadowOffsetY={3}
+        width={3.73}
+        height={1.36}
+        resizeToFit={false}
+        shadowBlur={1}
+        shadowOffsetX={1}
+        shadowOffsetY={1}
         shadowColor={textOutlineColor}
       />
     );
@@ -466,256 +847,55 @@ export default class WebsocketScene extends DCL.ScriptableScene<any, IState> {
    * Draw ghost placeholders for all the characters so we can see them in
    * realtime moving around and rotating.
    */
-  public characterBoxes(): DCL.ISimplifiedNode[][] {
-    return this.characterManager.characters.map((char, index) => {
-      const { username, position, rotation } = char;
-      const charBoxId = `character-box-${index}`;
+  private drawCharacterBoxes(): DCL.ISimplifiedNode[][] {
+    return characterManager
+      .characterList()
+      .filter(charInBounds)
+      .map((char, index) => {
+        const { username, position, rotation } = char;
+        const charBoxId = `character-box-${index}`;
 
-      const { x, z } = position;
-      const ghostPosition = { x, y: 1.5, z };
-      const nametagPosition = { x, y: 2.3, z };
-      const nametagRotation = {
-        x: rotation.x,
-        y: rotation.y + 180,
-        z: rotation.z,
-      };
+        const { x, z } = position;
+        const ghostPosition = { x, y: 1.5, z };
+        const nametagPosition = { x, y: 2.3, z };
+        const nametagRotation = {
+          x: rotation.x,
+          y: rotation.y + 180,
+          z: rotation.z,
+        };
 
-      // user ghost box
-      const ghost = (
-        <cylinder
-          id={charBoxId}
-          key={charBoxId}
-          position={ghostPosition}
-          rotation={rotation}
-          scale={ghostScale}
-          arc={ghostArc}
-          radius={ghostRadius}
-          openEnded={true}
-          material="#ghost-material"
-        />
-      );
+        // user ghost box
+        const ghost = (
+          <cylinder
+            id={charBoxId}
+            key={charBoxId}
+            position={ghostPosition}
+            rotation={rotation}
+            scale={ghostScale}
+            arc={ghostArc}
+            radius={ghostRadius}
+            openEnded={true}
+            material="#ghost-material"
+          />
+        );
 
-      // user name tag
-      const nametag = (
-        <text
-          position={nametagPosition}
-          rotation={nametagRotation}
-          outlineWidth={textOutlineWidth}
-          outlineColor={textOutlineColor}
-          color={textColor}
-          fontFamily={textFontFamily}
-          fontSize={70}
-          value={username}
-          width={2}
-          height={0.6}
-        />
-      );
+        // user name tag
+        const nametag = (
+          <text
+            position={nametagPosition}
+            rotation={nametagRotation}
+            outlineWidth={textOutlineWidth}
+            outlineColor={textOutlineColor}
+            color={textColor}
+            fontFamily={textFontFamily}
+            fontSize={70}
+            value={username}
+            width={2}
+            height={0.6}
+          />
+        );
 
-      return [ghost, nametag];
-    });
-  }
-
-  /**
-   * When the scene loads up we give a clue about the interactive floor tiles
-   * by animating each one down in a fast animation sequence.
-   */
-  public transitionTileDown(tileIndex: number): void {
-    const { tileYs } = this.state;
-    let y = tileYs[tileIndex];
-
-    if (y <= 0) {
-      // it's already at the ground level, early exit, stop animating this tile
-      return;
-    }
-
-    // move the tile down
-    y -= 0.1;
-
-    // because javascript does incorrect math we have to force
-    // only one decimal point
-    y = parseFloat(y.toFixed(1));
-
-    // set the y of this tile
-    tileYs[tileIndex] = y;
-
-    // animate
-    this.setState({ tileYs });
-
-    // schedule another animation
-    setTimeout(() => this.transitionTileDown(tileIndex), 30);
-  }
-
-  /**
-   * Draw the tiles 5x5 grid of 2x2 size
-   *
-   * This was actually a difficult one to solve. If I used Vector3Components
-   * from the state object it didn't work. Maybe there is a limitation
-   * or some clever code in the framework trying to reduce CPU use
-   * by intelligently detecting state change. Either way this hack worked.
-   *
-   * Some variables are inside the state and some are outside.
-   *
-   * -Tony
-   */
-  public tiles(): DCL.ISimplifiedNode[] {
-    const { tileYs, tileColors } = this.state;
-
-    return tileYs.map((y, index) => {
-      const { x, z } = initTilePositions[index];
-      const color = tileColors[index];
-
-      return (
-        <box
-          id={`tile-${index}`}
-          position={{ x, y, z }}
-          scale={tileScale}
-          color={color}
-        />
-      );
-    });
-  }
-
-  /**
-   * Draw some boxes that allow the user to go change their username.
-   */
-  public usernameEditor(): DCL.ISimplifiedNode[] {
-    const { usernameInputText } = this.state;
-
-    // let change = (evt: any) => console.log("evt", evt)
-    const save = () => this.setState({ usernameInputText });
-
-    // no onChange ☹️
-    const textbox = (
-      <input-text
-        position={{ x: 4, y: 1.5, z: 9.75 }}
-        color="#000000"
-        fontFamily={textFontFamily}
-        fontSize={40}
-        value={usernameInputText}
-        height={0.5}
-        background="#EEEEEE"
-        focusedBackground="#FFFFFF"
-      />
-    );
-
-    const btn = (
-      <box
-        id="username-editor-btn"
-        position={{ x: 4.7, y: 1.2, z: 9.75 }}
-        scale={{ x: 0.3, y: 0.3, z: 0.01 }}
-        color={signColor}
-        onClick={save}
-      />
-    );
-
-    const btnText = (
-      <text
-        id="billboard-text"
-        position={{ x: 4.7, y: 1.2, z: 9.7 }}
-        outlineWidth={textOutlineWidth}
-        outlineColor={textOutlineColor}
-        color={textColor}
-        fontFamily={textFontFamily}
-        fontSize={48}
-        value="OK"
-        shadowBlur={3}
-        shadowOffsetX={3}
-        shadowOffsetY={3}
-        shadowColor={textOutlineColor}
-        onClick={save}
-      />
-    );
-
-    return [textbox, btn, btnText];
-  }
-
-  /**
-   * When the scene loads we use the opportunity to bind socket.io
-   * and trigger some animations.
-   */
-  public sceneDidMount(): void {
-    const {
-      socket,
-      socketConnected,
-      socketError,
-      socketDisconnected,
-      socketReconnect,
-      characterJoin,
-      characterUsername,
-      characterPosition,
-      characterRotation,
-      frameworkPositionChanged,
-      frameworkRotationChanged,
-      character,
-    } = this;
-    const { id, username } = character;
-    const { connected } = socket;
-    let transitionDelay = 100;
-    const usernameInputText = username;
-
-    /*
-
-    Why `.bind(this)` ?
-
-    socket.io doesn't know where it's coming from or that we need
-    to have `this` inside each of the event handlers.
-
-    By binding `this` on it we can access state and other
-    instance methods inside the event handler.
-
-    */
-    socket.on("connect", socketConnected.bind(this));
-    socket.on("disconnect", socketDisconnected.bind(this));
-    socket.on("connect_error", socketError.bind(this));
-    socket.on("timeout", socketError.bind(this));
-    socket.on("error", socketError.bind(this));
-    socket.on("reconnect", socketReconnect.bind(this));
-    socket.on("character-join", characterJoin.bind(this));
-    socket.on("character-username", characterUsername.bind(this));
-    socket.on("character-position", characterPosition.bind(this));
-    socket.on("character-rotation", characterRotation.bind(this));
-
-    // framework events
-    this.subscribeTo("positionChanged", frameworkPositionChanged.bind(this));
-    this.subscribeTo("rotationChanged", frameworkRotationChanged.bind(this));
-
-    this.setState({ connected, usernameInputText });
-
-    // schedule animations for each tile
-    this.state.tileYs.forEach((_, tileIndex) => {
-      setTimeout(() => this.transitionTileDown(tileIndex), transitionDelay);
-      transitionDelay += 50;
-    });
-
-    // keep-alive type thing
-    setInterval(() => this.socket.emit("character-ping", { id }), 5000);
-
-    this.generateBillboardText();
-  }
-
-  public sceneWillUnmount(): void {
-    this.part();
-  }
-
-  /**
-   * Draw the scene.
-   *
-   * As you can see it's not necessary to draw all the entities
-   * from inside the `render` function. They can be anywhere.
-   */
-  public async render() {
-    return (
-      <scene id="sample-sync-websockets-scene">
-        {ghostMaterial}
-        {signMaterial}
-        {billboardBackgroundBox}
-        {usernameEditorBackgroundBox}
-        {usernameEditorLabel}
-        {this.playersBillboard()}
-        {this.characterBoxes()}
-        {this.tiles()}
-        {this.usernameEditor()}
-      </scene>
-    );
+        return [ghost, nametag];
+      });
   }
 }
