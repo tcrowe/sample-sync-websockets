@@ -1,9 +1,8 @@
 /*
 
-shared values by:
-+ ./characters.ts
-+ ../scene/index.tsx
-+ ../server/http-ws-worker.ts
+Settings for the scene and server.
+
+Copy whatever you change in here to ../scene/lib/config.ts
 
 */
 

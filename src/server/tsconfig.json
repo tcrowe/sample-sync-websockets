@@ -14,7 +14,7 @@
     "baseUrl": ".",
     "strict": true,
     "removeComments": true,
-    "outDir": "../../dist",
+    "outDir": "../../dist/server",
     "pretty": true,
     "lib": ["ESNext"]
   }

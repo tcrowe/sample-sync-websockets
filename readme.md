@@ -34,7 +34,7 @@ Windows users may require `npm install --ignore-scripts` to avoid compilation.
 
 It's going to bind on two ports:
 + Decentraland preview server (1) `127.0.0.1:8834`
-+ Websocket server cluster (1) `127.0.0.1:8835`
++ Websocket server (1) `127.0.0.1:8835`
 
 Open the preview:
 
@@ -77,8 +77,8 @@ All of `dev-*` tasks watch for changes and re-run themselves.
 
 Configure to your preference:
 
-+ [./src/shared/config.ts](./src/shared/config.ts)
-  * Configure the websocket host and other details for the scene
++ [./src/scene/lib/config.ts](./src/scene/lib/config.ts)
++ [./src/server/lib/config.ts](./src/server/lib/config.ts)
 + [./tslint.json](./tslint.json)
 + [./.prettierrc](./.prettierrc)
 + [./src/scene/tsconfig.json](./src/scene/tsconfig.json)

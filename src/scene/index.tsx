@@ -8,7 +8,7 @@ and displays for the user.
 import * as DCL from "decentraland-api";
 import { Vector3Component } from "decentraland-api";
 import * as io from "socket.io-client";
-import { Character } from "../shared/character";
+import { Character } from "./lib/character";
 import {
   CharacterManager,
   ICharacterJoinEvent,
@@ -16,9 +16,9 @@ import {
   ICharacterPositionEvent,
   ICharacterRotationEvent,
   ICharacterUsernameEvent,
-} from "../shared/character-manager";
-import { socketHost, socketPath } from "../shared/config";
-import { isValidBoundedVector3Component } from "../shared/formats";
+} from "./lib/character-manager";
+import { socketHost, socketPath } from "./lib/config";
+import { isValidBoundedVector3Component } from "./lib/formats";
 
 const clamp = require("lodash/clamp");
 const padEnd = require("lodash/padEnd");
@@ -202,7 +202,7 @@ function distance(pos1: Vector3Component, pos2: Vector3Component): number {
 /**
  * Returns true if the character is inside the configured bounds, 0 to 10
  *
- * See ../shared/config.ts
+ * See ./lib/config.ts
  */
 const charInBounds = (char: Character) =>
   isValidBoundedVector3Component(char.position) === true;

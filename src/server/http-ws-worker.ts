@@ -3,8 +3,8 @@ import * as cors from "cors";
 import * as express from "express";
 import * as http from "http";
 import * as socketio from "socket.io";
-import { CharacterManager } from "../shared/character-manager";
-import { socketPath } from "../shared/config";
+import { CharacterManager } from "./lib/character-manager";
+import { socketPath } from "./lib/config";
 
 const throttle = require("lodash/throttle");
 

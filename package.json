@@ -23,20 +23,19 @@
   },
   "scripts": {
     "clean": "rm -rf dist",
-    "setup": "mkdir -p dist/scene dist/server dist/shared",
-    "dev-tslint-scene": "nodemon -q -L -d 1 -w src/scene -w src/shared --ext ts,tsx --exec tslint --config tslint.json --format stylish --project src/scene/tsconfig.json || true",
-    "dev-tslint-server": "nodemon -q -L -d 1 -w src/server -w src/shared --ext ts,tsx --exec tslint --config tslint.json --format stylish --project src/server/tsconfig.json || true",
+    "setup": "mkdir -p dist/scene dist/server",
+    "dev-tslint-scene": "nodemon -q -L -d 1 -w src/scene --ext ts,tsx --exec tslint --config tslint.json --format stylish --project src/scene/tsconfig.json || true",
+    "dev-tslint-server": "nodemon -q -L -d 1 -w src/server --ext ts,tsx --exec tslint --config tslint.json --format stylish --project src/server/tsconfig.json || true",
     "dev-compile-scene": "decentraland-compiler build-scene.json --watch || true",
     "dev-compile-server": "decentraland-compiler build-server.json --watch || true",
-    "dev-server": "sleep 6 && nodemon -q -L -d 1 -w dist/server -w dist/shared dist/server/index.js || true",
+    "dev-server": "sleep 6 && nodemon -q -L -d 1 -w dist/server dist/server/index.js || true",
     "dev": "run-p setup dev-*",
-    "prd-prettier": "prettier --write src/**/*.{ts,tsx}",
+    "prd-prettier": "prettier --write src/{scene,server}/**/*.{ts,tsx}",
     "prd-tslint-scene": "tslint --config tslint.json --fix --project src/scene/tsconfig.json",
     "prd-tslint-server": "tslint --config tslint.json --fix --project src/server/tsconfig.json",
     "prd-compile-scene": "NODE_ENV=production decentraland-compiler build-scene.json",
     "prd-compile-server": "NODE_ENV=production decentraland-compiler build-server.json",
     "prd-server": "NODE_ENV=production node dist/server/index.js",
     "prd": "run-s clean setup prd-* && run-p server-*"
-  },
-  "devDependencies": {}
+  }
 }
