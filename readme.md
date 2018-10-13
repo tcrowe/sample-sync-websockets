@@ -93,6 +93,8 @@ Configure to your preference:
 + [./src/scene/tsconfig.json](./src/scene/tsconfig.json)
 + [./src/server/tsconfig.json](./src/server/tsconfig.json)
 
+**Some files were duplicated to create a clear distinction between client and server code. See `./src/scene/lib` and `./src/server/lib`. It might be best to keep them in sync.**
+
 **Before commit try running the strict production sequence.**
 
 ---
