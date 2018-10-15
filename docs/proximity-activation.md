@@ -1,15 +1,15 @@
 
 # sample-sync-websockets: Proximity Activation
 
-Over in [Synchronize Websockets](./synchronize-websockets.md) we were going over how to connect to some Decentraland events called `positionChanged` and `rotationChanged`.
+In the [Synchronize Websockets](./synchronize-websockets.md) doc we go over how to track some Decentraland events called `positionChanged` and `rotationChanged`.
 
-Now we can tie it together tracking our position, or all the characters connected to the server, and do something based on their position.
+Now we can tie it all together tracking the user's position, or the positions of all the characters connected to the server, and do something based on that.
 
 ---
 
-## Wait, school actually taught us a useful thing?
+## Wait, school actually taught us something useful?
 
-In the Decentraland chat I was talking with a new pal. We were going over some ideas and the API.
+In the Decentraland Discord chat I was talking with a new pal, we were discussing some ideas about the API.
 
 ```
 me: dood, I used Pythagoras' Theorem from school!
@@ -26,7 +26,7 @@ import { Vector3Component } from "decentraland-api";
  *
  * Get the distance between two points.
  *
- * Note: It uses {x,z} not {x,y}. The y-coordinate is how high up it is.
+ * Note: It uses {x,z} not {x,y}. In Decentraland the y-coordinate refers to height.
  */
 function distance(pos1: Vector3Component, pos2: Vector3Component): number {
   const a = pos1.x - pos2.x;
@@ -37,9 +37,9 @@ function distance(pos1: Vector3Component, pos2: Vector3Component): number {
 
 (If I got it wrong just post an issue. I wasn't really paying attention in school.)
 
-What can we do this with? **Proximity Activation Technique** in Decentraland is what.
+What can we do with this? The **Proximity Activation Technique** is what.
 
-`Vector3Component` just means `{x, y, z}`.
+A `Vector3Component` is just an object that stores `{x, y, z}` coordinates.
 
 ```ts
 const player1 = { x: 1, y: 0, z: 1 }
@@ -55,29 +55,23 @@ if (spaceBetween <= activationDistance) {
   console.log("don't activate")
 }
 
+// CONSOLE OUTPUT:
 // spaceBetween 4.242640687119285
 // don't activate
 ```
 
-Lets move a bit closer:
+If our users move a bit closer together, we can see the console output changes accordingly. If:
+
+- player1 = `{ x: 3, y: 0, z: 3 }`
+- player2 = `{ x: 3.5, y: 0, z: 3.5 }`
+
+...then we get the following output:
 
 ```ts
-const player3 = { x: 3, y: 0, z: 3 }
-const player4 = { x: 3.5, y: 0, z: 3.5 }
-const activationDistance = 2
-const spaceBetween = distance(player3, player4)
-
-console.log("spaceBetween", spaceBetween)
-
-if (spaceBetween <= activationDistance) {
-  console.log("activate!")
-} else {
-  console.log("don't activate")
-}
-
 // spaceBetween 0.7071067811865476
 // activate!
 ```
+
 
 Okay, we've got a system for proximity activation. This is what the `sample-sync-websockets` uses in order to light up the tiles and open the door.
 
@@ -87,13 +81,13 @@ Okay, we've got a system for proximity activation. This is what the `sample-sync
 
 ![proximity-activation-door-closed.png](../img/proximity-activation-door-closed.png)
 
-You can see as another player goes into the scene it will sync their location and activate tiles or the door.
+As another player enters the scene, the server will sync their location and you will see tiles and/or the door activate in response.
 
 ![2018-10-12-websockets01.gif](../img/2018-10-12-websockets01.gif)
 
 ---
 
-What could you imagine doing using this technique? Let me know!
+What can you imagine doing using this technique? Let me know!
 
 Come find me in the Decentraland chat and show me what you come up with.
 
