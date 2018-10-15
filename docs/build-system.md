@@ -1,9 +1,9 @@
 
 # sample-sync-websockets: The Build System
 
-**This is a guide for if you want to know how the whole build system works from top to bottom.**
+**This is a guide for describing the whole build system for sample-sync-websockets, from top to bottom.**
 
-There's a few tools we'll use to get the scene and server build and running.
+There are a few tools we'll use to get the scene and server built and running.
 
 ```sh
 npm install --save decentraland decentraland-api decentraland-rpc nodemon npm-run-all prettier tslint
@@ -19,7 +19,7 @@ mkdir -p dist/scene dist/server
 mkdir -p src/scene src/server
 ```
 
-The `./dist` directory we just want to be able to delete it and rebuild any time. It's very helpful to automate the tear-down & build-up process into `./package.json` `scripts`.
+We want to be able to delete and rebuild the `./dist` directory at any time. It's very helpful to automate the tear-down & build-up process into `./package.json`. To do this, add new commands under `scripts`.
 
 ```json
 "scripts": {
@@ -28,7 +28,7 @@ The `./dist` directory we just want to be able to delete it and rebuild any time
 }
 ```
 
-Now this repetitive task can be automatically done in the build process.
+Now this repetitive task can be automatically done as part of the build process.
 
 Try it like so:
 
@@ -42,7 +42,7 @@ npm run setup
 
 ---
 
-For the sake of simplicity, for testing our build system, lets just compile a simple message.
+For the sake of simplicity, for testing our build system, let's just compile a simple message.
 
 ```sh
 echo 'console.log("scene up");' > src/scene/index.tsx
@@ -51,7 +51,7 @@ echo 'console.log("server up");' > src/server/index.ts
 
 ---
 
-The TypeScript config files that tell TypeScript build tools how to compile our code and which platform they are targeting. For reference you can see and adjust all the `compilerOptions` using [this guide](https://www.typescriptlang.org/docs/handbook/compiler-options.html).
+The TypeScript config files tell TypeScript build tools how to compile our code and which platform they are targeting. For reference, you can see and adjust all the `compilerOptions` using [this guide](https://www.typescriptlang.org/docs/handbook/compiler-options.html).
 
 ```sh
 # instructions so TypeScript can do it's job
@@ -87,13 +87,15 @@ touch src/server/tsconfig.json
 }
 ```
 
-In this project we've specified a `strict` style so our code conforms to what The Wise Elders of TypeScript™️ think is right. 😉
+In this project, we've specified a `strict` style so that our code conforms to what The Wise Elders of TypeScript™️ think is right. 😉
 
-+ `outDir` points to where we want the compiled files to end up
-+ `jsxFactory` tells TypeScript to use `DCL.createElement` instead of `React.createElement`
-+ `lib` signals that TypeScript should understand this will use some APIs in the browser, specifically `WebWorker`
++ `outDir` points to where we want the compiled files to end up.
++ `jsxFactory` tells TypeScript to use `DCL.createElement` instead of `React.createElement`.
++ `lib` signals that TypeScript should understand that this will use some APIs in the browser, specifically `WebWorker`.
 
-The file `./src/server/tsconfig.json` is only slightly different.
+The file `./src/server/tsconfig.json` that our _server_ uses is only slightly different from the one the _scene_ uses.
+
+`./src/server/tsconfig.json`
 
 ```json
 {
@@ -124,9 +126,9 @@ The file `./src/server/tsconfig.json` is only slightly different.
 
 ---
 
-In this project we use `decentraland-compiler` to compile *both* the scene and server. It's nice to have this flexible tool which can do that.
+In this project we use `decentraland-compiler` to compile *both* the scene and server. It's nice to have this flexible tool that can do that.
 
-In the project root lets create two `json` files that tell `decentraland-compiler` how to do it's job.
+In the project root, let's create two `json` files that tell `decentraland-compiler` how to do its job.
 
 `./build-scene.json`
 
@@ -142,7 +144,7 @@ In the project root lets create two `json` files that tell `decentraland-compile
 ]
 ```
 
-So we're saying this should be compiled with Webpack, to be deployed for a WebWorker, and here's our TypeScript files too. Go compile it Mr. `decentraland-compiler`! 🤓
+In this file we're saying the scene should be compiled with Webpack, to be deployed for a WebWorker, and here's our TypeScript file too. Go compile it Mr. `decentraland-compiler`! 🤓
 
 `./build-server.json`
 
@@ -156,9 +158,9 @@ So we're saying this should be compiled with Webpack, to be deployed for a WebWo
 ]
 ```
 
-This one is simpler. We're saying just compile with TSC and here's the TypeScript config.
+This configuration is simpler. We're just instructing to compile the server with TSC and here's the TypeScript config.
 
-Now that we have both a `tsconfig.json` and Decentraland build files we can add these scripts into the `./package.json`.
+Now that we have a `tsconfig.json` and a Decentraland build file for both the scene and for the server, we can add these scripts into the `./package.json`.
 
 ```json
 "scripts": {
@@ -193,7 +195,7 @@ touch tslint.json
 }
 ```
 
-These scripts look a bit complicated, and they are, but it helps TSLint to watch for changes and re-scan our code.
+These scripts look a bit complicated (and they are) but they help TSLint watch for changes and re-scan our code.
 
 ```json
 "scripts": {
@@ -202,7 +204,7 @@ These scripts look a bit complicated, and they are, but it helps TSLint to watch
 }
 ```
 
-So that's `nodemon`:
+So `nodemon` is doing the following:
 + running quietly `-q`
 + legacy file watch `-L`
 + with a delay of one second `-d 1`
@@ -238,13 +240,13 @@ npm run dev-server
 npm run dev
 ```
 
-This ties all of our `dev-*` `./package.json` `scripts` together. `run-p setup dev-*` says to `npm` run the script `setup` and any script matching `dev-*` in parallel. That's what `npm-run-all` module gives us.
+This ties all of our `dev-*` `./package.json` `scripts` together. `run-p setup dev-*` tells `npm` to run the script `setup` and any other script that matches `dev-*` in parallel. That's what the `npm-run-all` module gives us.
 
 ---
 
 ## Production mode
 
-We use much of the same scripts and tools as above sans `|| true`. If these error we want it to stop.
+We use much of the same scripts and tools as above, sans `|| true`. If these output errors, we want execution to stop.
 
 ```json
 "scripts": {
