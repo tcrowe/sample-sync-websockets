@@ -261,7 +261,7 @@ We use much of the same scripts and tools as above, sans `|| true`. If these out
   "prd-compile-scene": "NODE_ENV=production decentraland-compiler build-scene.json",
   "prd-compile-server": "NODE_ENV=production decentraland-compiler build-server.json",
   "prd-server": "NODE_ENV=production node dist/server/index.js",
-  "prd": "run-s clean setup prd-* && run-p server-*"
+  "prd": "run-s clean setup prd-*"
 }
 ```
 
