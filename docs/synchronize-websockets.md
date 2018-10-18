@@ -225,7 +225,7 @@ socketServer.on("connect", (socket: socketio.Socket) => {
    * When someone joins the server let's remember their id and introduce
    * them to all the other users.
    */
-  socket.on("character-join", (evt) => {
+  socket.on("character-join", (evt: any) => {
     const [success, error] = characterManager.characterJoin(evt);
 
     if (success === true) {
@@ -247,7 +247,7 @@ socketServer.on("connect", (socket: socketio.Socket) => {
    * their scene they send this coordinate to us. It's then broadcasted to
    * everyone who is connected.
    */
-  socket.on("character-position", (evt) => {
+  socket.on("character-position", (evt: any) => {
     const [success, error] = characterManager.updateCharacterPosition(evt);
 
     if (success === true) {
@@ -264,7 +264,7 @@ socketServer.on("connect", (socket: socketio.Socket) => {
    * get the user's rotation. Their scene sends that to the server so it can broadcast
    * to everyone else who is connected.
    */
-  socket.on("character-rotation", (evt) => {
+  socket.on("character-rotation", (evt: any) => {
     const [success, error] = characterManager.updateCharacterRotation(evt);
 
     if (success === true) {
@@ -280,7 +280,7 @@ socketServer.on("connect", (socket: socketio.Socket) => {
    * Pings allow us to keep everyone fresh in memory. If they don't respond, their info
    * is discarded.
    */
-  socket.on("character-ping", (evt) => {
+  socket.on("character-ping", (evt: any) => {
     const [success, error] = characterManager.ping(evt);
 
     if (success === true) {
@@ -366,13 +366,13 @@ export default class WebsocketScene extends DCL.ScriptableScene<any, IState> {
      * Similar to the server example, we're just handling all these weird events
      * so that if they occur we get some feedback why it's screwing up.
      */
-    socket.on("connect_error", (err) => console.error("socket.io connect_error", err));
-    socket.on("connect_timeout", (err) => console.error("socket.io connect_timeout", err));
-    socket.on("error", (err) => console.error("socket.io error", err));
+    socket.on("connect_error", (err: Error) => console.error("socket.io connect_error", err));
+    socket.on("connect_timeout", (err: Error) => console.error("socket.io connect_timeout", err));
+    socket.on("error", (err: Error) => console.error("socket.io error", err));
     socket.on("reconnect_attempt", () => console.warn("socket.io reconnect_attempt"));
     socket.on("reconnecting", () => console.warn("socket.io reconnecting"));
-    socket.on("reconnect_error", (err) => console.error("socket.io reconnect_error", err));
-    socket.on("reconnect_failed", (err) => console.error("socket.io reconnect_failed", err));
+    socket.on("reconnect_error", (err: Error) => console.error("socket.io reconnect_error", err));
+    socket.on("reconnect_failed", (err: Error) => console.error("socket.io reconnect_failed", err));
 
     /**
      * It might be interesting to see how many times we are reconnecting
@@ -404,24 +404,24 @@ Above we were just concerned with bootstrapping our scene with socket events and
 Still inside `sceneDidMount() {}`:
 
 ```ts
-socket.on("character-join", (evt) => {
+socket.on("character-join", (evt: any) => {
   const [success, error] = characterManager.characterJoin(evt);
   console.log("character-join", evt, success, error);
   // What do you want to react to new characters joining?
 });
 
-socket.on("character-part", (evt) => {
+socket.on("character-part", (evt: any) => {
   const [success, error] = characterManager.characterPart(evt);
   console.log("character-part", evt, success, error);
   // What do you want to react to characters leaving?
 });
 
-socket.on("character-position", (evt) => {
+socket.on("character-position", (evt: any) => {
   const [success, error] = characterManager.updateCharacterPosition(evt);
   console.log("character-position", evt, success, error);
   // Do you want to react to character movements?
 });
-socket.on("character-rotation", (evt) => {
+socket.on("character-rotation", (evt: any) => {
   const [success, error] = characterManager.updateCharacterRotation(evt);
   console.log("character-rotation", evt, success, error);
   // Do you want to react to where players are looking at?
@@ -445,7 +445,7 @@ const character = new Character();
 //
 // Tracking user movements (using W-A-S-D keys)
 //
-this.subscribeTo("positionChanged", (evt) => {
+this.subscribeTo("positionChanged", (evt: any) => {
   const { id } = character;
   const { position } = evt;
   character.position = position;
@@ -458,7 +458,7 @@ this.subscribeTo("positionChanged", (evt) => {
 //
 // Tracking view rotation like mouse-look, phone, or VR view rotate.
 //
-this.subscribeTo("rotationChanged", (evt) => {
+this.subscribeTo("rotationChanged", (evt: any) => {
   const { id } = character;
   const { rotation } = evt;
   character.rotation = rotation;
