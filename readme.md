@@ -75,8 +75,11 @@ npm run dev-tslint-server
 npm run dev-compile-scene
 npm run dev-compile-server
 
-# server (6-sec delay waiting for compile)
-npm run dev-server
+# running dcl start
+npm run dev-dcl
+
+# websocket server (6-sec delay waiting for compile)
+npm run dev-websockets
 
 # nuke the build
 npm run clean
@@ -120,9 +123,6 @@ npm run prd-tslint-server
 # compile
 npm run prd-compile-scene
 npm run prd-compile-server
-
-# server (6-sec delay waiting for compile)
-npm run prd-server
 ```
 
 ---
