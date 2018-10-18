@@ -344,8 +344,6 @@ export default class WebsocketScene extends DCL.ScriptableScene<any, IState> {
     autoConnect: false,
     // jsonp is impossible in this context (WebWorker)
     jsonp: false,
-    // with a specific URI
-    path: socketPath,
     // give up after failing too many times
     reconnectionAttempts: 30,
     // only use websockets, not polling
