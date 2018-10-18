@@ -419,12 +419,12 @@ socket.on("character-part", (evt) => {
 });
 
 socket.on("character-position", (evt) => {
-  const [success, error] = characterManager.characterPosition(evt);
+  const [success, error] = characterManager.updateCharacterPosition(evt);
   console.log("character-position", evt, success, error);
   // Do you want to react to character movements?
 });
 socket.on("character-rotation", (evt) => {
-  const [success, error] = characterManager.characterRotation(evt);
+  const [success, error] = characterManager.updateCharacterRotation(evt);
   console.log("character-rotation", evt, success, error);
   // Do you want to react to where players are looking at?
 });
