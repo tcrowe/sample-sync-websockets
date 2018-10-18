@@ -130,6 +130,11 @@ In this project we use `decentraland-compiler` to compile *both* the scene and s
 
 In the project root, let's create two `json` files that tell `decentraland-compiler` how to do its job.
 
+```sh
+touch build-scene.json
+touch build-server.json
+```
+
 `./build-scene.json`
 
 ```json
