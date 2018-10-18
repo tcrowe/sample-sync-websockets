@@ -19,7 +19,7 @@ mkdir -p dist/scene dist/server
 mkdir -p src/scene src/server
 ```
 
-We want to be able to delete and rebuild the `./dist` directory at any time. It's very helpful to automate the tear-down & build-up process into `./package.json`. To do this, add new commands under `scripts`.
+We want to be able to delete and rebuild the `./dist` directory at any time. It's helpful to automate the tear-down & build-up process into `./package.json`. To do this, add new commands under `scripts`.
 
 ```json
 "scripts": {
@@ -50,6 +50,8 @@ echo 'console.log("server up");' > src/server/index.ts
 ```
 
 ---
+
+## Configuring TypeScript
 
 The TypeScript config files tell TypeScript build tools how to compile our code and which platform they are targeting. For reference, you can see and adjust all the `compilerOptions` using [this guide](https://www.typescriptlang.org/docs/handbook/compiler-options.html).
 
@@ -93,7 +95,7 @@ In this project, we've specified a `strict` style so that our code conforms to w
 + `jsxFactory` tells TypeScript to use `DCL.createElement` instead of `React.createElement`.
 + `lib` signals that TypeScript should understand that this will use some APIs in the browser, specifically `WebWorker`.
 
-The file `./src/server/tsconfig.json` that our _server_ uses is only slightly different from the one the _scene_ uses.
+The file `./src/server/tsconfig.json` that our *server* uses is only slightly different from the one the *scene* uses.
 
 `./src/server/tsconfig.json`
 
@@ -125,6 +127,44 @@ The file `./src/server/tsconfig.json` that our _server_ uses is only slightly di
 + No `react` stuff is necessary
 
 ---
+
+## Configure Decentraland scene
+
+For this tutorial we've most of the fields blank so others can choose if they want to fill it in.
+
++ `"owner": "0x000..."` is the Ethereum address.
++ `"main": "dist/scene/index.js"` tells Decentraland where the scene is
+
+```json
+{
+  "assets": {},
+  "owner": "",
+  "contact": {
+    "name": "",
+    "email": "",
+    "url": ""
+  },
+  "main": "dist/scene/index.js",
+  "scene": {
+    "base": "0,0",
+    "parcels": ["0,0"]
+  },
+  "communications": {
+    "type": "webrtc",
+    "signalling": "https://rendezvous.decentraland.org"
+  },
+  "policy": {},
+  "display": {
+    "title": "sample-sync-websockets",
+    "description": "Fast multiplayer state synchronization via websockets"
+  }
+}
+```
+
+---
+
+
+## Configuring Decentraland's compiler
 
 In this project we use `decentraland-compiler` to compile *both* the scene and server. It's nice to have this flexible tool that can do that.
 
@@ -178,6 +218,8 @@ All that does is tell Decentraland to watch for changes and rebuild. We're almos
 
 ---
 
+## Configuring TSLint
+
 Next is TSLint. TSLint can both analyze and fix the code.
 
 ```sh
@@ -223,6 +265,8 @@ So `nodemon` is doing the following:
 If you keep seeing ` || true` that just tells npm to be quiet if an error happens.
 
 ---
+
+## Putting it all together
 
 Now we're ready to put the last pieces together and run all our development tasks in parallel.
 
