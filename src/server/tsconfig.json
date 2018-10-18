@@ -12,7 +12,6 @@
     "newLine": "lf",
     "stripInternal": true,
     "baseUrl": ".",
-    "strict": true,
     "removeComments": true,
     "outDir": "../../dist/server",
     "pretty": true,
