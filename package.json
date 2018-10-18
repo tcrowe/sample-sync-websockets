@@ -37,5 +37,10 @@
     "prd-compile-server": "NODE_ENV=production decentraland-compiler build-server.json",
     "prd-server": "NODE_ENV=production node dist/server/index.js",
     "prd": "run-s clean setup prd-* && run-p server-*"
+  },
+  "now": {
+    "engines": {
+      "node": "^8.12.0"
+    }
   }
 }
