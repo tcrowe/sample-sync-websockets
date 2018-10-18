@@ -1,16 +1,24 @@
-import * as cluster from "cluster";
+// import * as cluster from "cluster";
 import * as cors from "cors";
 import * as express from "express";
 import * as http from "http";
 import * as socketio from "socket.io";
-import { CharacterManager } from "./lib/character-manager";
+import {
+  CharacterManager,
+  ICharacterJoinEvent,
+  ICharacterPartEvent,
+  ICharacterPingEvent,
+  ICharacterPositionEvent,
+  ICharacterRotationEvent,
+  ICharacterUsernameEvent,
+} from "./lib/character-manager";
 import { socketPath } from "./lib/config";
 
 const throttle = require("lodash/throttle");
 
 const { HTTP_HOST = "127.0.0.1", HTTP_PORT = "8835" } = process.env;
 const httpPort: number = parseInt(HTTP_PORT, 10);
-const workerId: string = cluster.worker.id.toString();
+// const workerId: string = cluster.worker.id.toString();
 const expressApp: express.Application = express();
 const httpServer: http.Server = http.createServer(expressApp);
 const characterManager = new CharacterManager();
@@ -57,7 +65,8 @@ function httpServerListening(err?: Error): void {
     return shutdown(1);
   }
 
-  console.log("worker", workerId, `[ws] http://${HTTP_HOST}:${HTTP_PORT}`);
+  // console.log("worker", workerId, `[ws] http://${HTTP_HOST}:${HTTP_PORT}`);
+  console.log(`[ws] http://${HTTP_HOST}:${HTTP_PORT}`);
 }
 
 /**
@@ -98,78 +107,102 @@ function socketServerConnection(socket: socketio.Socket): void {
 
   socket.on(
     "character-join",
-    (evt): void => {
-      const [success, error] = characterManager.characterJoin(evt);
+    (joinEvent: ICharacterJoinEvent): void => {
+      const [success, error] = characterManager.characterJoin(joinEvent);
 
       if (success === true) {
-        // console.log("character join", evt);
-        const { id } = evt;
+        // console.log("character join", joinEvent);
+        const { id } = joinEvent;
         characterId = id;
-        socket.broadcast.emit("character-join", evt);
+        socket.broadcast.emit("character-join", joinEvent);
         introduceCharacters();
         return;
       }
 
-      console.error("character join error", error, evt);
+      console.error("character join error", error, joinEvent);
+    }
+  );
+
+  socket.on(
+    "character-part",
+    (partEvent: ICharacterPartEvent): void => {
+      const [success, error] = characterManager.characterPart(partEvent);
+
+      if (success === true) {
+        // console.log("character part", partEvent);
+        const { id } = partEvent;
+        characterId = id;
+        socket.broadcast.emit("character-part", partEvent);
+        introduceCharacters();
+        return;
+      }
+
+      console.error("character part error", error, partEvent);
     }
   );
 
   socket.on(
     "character-username",
-    (evt): void => {
-      const [success, error] = characterManager.updateCharacterUsername(evt);
+    (usernameEvent: ICharacterUsernameEvent): void => {
+      const [success, error] = characterManager.updateCharacterUsername(
+        usernameEvent
+      );
 
       if (success === true) {
-        // console.log("character username", evt);
-        socket.broadcast.emit("character-username", evt);
+        // console.log("character username", usernameEvent);
+        socket.broadcast.emit("character-username", usernameEvent);
         return;
       }
 
-      console.error("character username error", error, evt);
+      console.error("character username error", error, usernameEvent);
     }
   );
 
   socket.on(
     "character-position",
-    (evt): void => {
-      const [success, error] = characterManager.updateCharacterPosition(evt);
+    (positionEvent: ICharacterPositionEvent): void => {
+      const [success, error] = characterManager.updateCharacterPosition(
+        positionEvent
+      );
 
       if (success === true) {
-        // console.log("character position", evt);
-        socket.broadcast.emit("character-position", evt);
+        // console.log("character position", positionEvent);
+        socket.broadcast.emit("character-position", positionEvent);
         return;
       }
 
-      console.error("character position error", error, evt);
+      console.error("character position error", error, positionEvent);
     }
   );
 
   socket.on(
     "character-rotation",
-    (evt): void => {
-      const [success, error] = characterManager.updateCharacterRotation(evt);
+    (rotationEvent: ICharacterRotationEvent): void => {
+      const [success, error] = characterManager.updateCharacterRotation(
+        rotationEvent
+      );
 
       if (success === true) {
-        // console.log("character rotation", evt);
-        socket.broadcast.emit("character-rotation", evt);
+        // console.log("character rotation", rotationEvent);
+        socket.broadcast.emit("character-rotation", rotationEvent);
         return;
       }
 
-      console.error("character rotation error", error, evt);
+      console.error("character rotation error", error, rotationEvent);
     }
   );
 
   socket.on(
     "character-ping",
-    (evt): void => {
-      const [success, error] = characterManager.ping(evt);
+    (pingEvent: ICharacterPingEvent): void => {
+      const [success, error] = characterManager.ping(pingEvent);
 
       if (success === true) {
-        // console.log("character ping", evt);
+        // console.log("character ping", pingEvent);
         return;
       }
 
-      console.error("character ping error", error, evt);
+      console.error("character ping error", error, pingEvent);
     }
   );
 

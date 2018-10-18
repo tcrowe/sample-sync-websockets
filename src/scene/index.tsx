@@ -18,11 +18,12 @@ import {
   ICharacterUsernameEvent,
 } from "./lib/character-manager";
 import { socketHost, socketPath } from "./lib/config";
-import { isValidBoundedVector3Component } from "./lib/formats";
+import { isValidBoundedVector3Component, isValidUsername } from "./lib/formats";
 
 const clamp = require("lodash/clamp");
 const padEnd = require("lodash/padEnd");
 const throttle = require("lodash/throttle");
+const debounce = require("lodash/debounce");
 const random = require("lodash/random");
 
 export interface IState {
@@ -37,6 +38,7 @@ export interface IState {
   tileColors: string[];
   tilePositions: Vector3Component[];
   usernameInputText: string;
+  usernameTextboxBackground: string;
 }
 
 //
@@ -67,8 +69,11 @@ const ghostMaterial = (
 
 const textFontFamily = "monospace";
 const textColor = "#FFFFFF";
+const textInputColor = "#000000";
 const textOutlineColor = "#000000";
 const textOutlineWidth = 1;
+const usernameValidBackground = "#FFFFFF";
+const usernameInvalidBackground = "#FFCCCC";
 
 //
 // "sign" is like the billboard or other UI in the scene
@@ -166,7 +171,7 @@ const doorScale = { x: 2.01, y: 3, z: 0.01 };
 const billboardBackgroundBox = (
   <box
     id="billboard-bg"
-    position={{ x: 4, y: 4, z: 9 }}
+    position={{ x: 5, y: 4, z: 9 }}
     scale={{ x: 4, y: 1.5, z: 0.01 }}
     rotation={{ x: -50, y: 0, z: 0 }}
     material="#sign-material"
@@ -229,6 +234,7 @@ export default class WebsocketScene extends DCL.ScriptableScene<any, IState> {
     tileColors: defaultTileColors,
     tilePositions: defaultTilePositions,
     usernameInputText: "",
+    usernameTextboxBackground: usernameValidBackground,
   };
 
   // representing the viewer of this scene
@@ -380,6 +386,28 @@ export default class WebsocketScene extends DCL.ScriptableScene<any, IState> {
     this.triggerAutomaticDoor();
   }, 200);
 
+  private usernameTextboxChanged = debounce((evt: any): void => {
+    if (
+      evt !== undefined &&
+      evt.data !== undefined &&
+      evt.data.value !== undefined &&
+      typeof evt.data.value === "string"
+    ) {
+      const usernameInputText = evt.data.value;
+      let usernameTextboxBackground = usernameInvalidBackground;
+
+      if (isValidUsername(usernameInputText) === true) {
+        usernameTextboxBackground = usernameValidBackground;
+        this.character.username = usernameInputText;
+        const username = usernameInputText;
+        const { id } = this.character;
+        this.socket.emit("character-username", { id, username });
+      }
+
+      this.setState({ usernameInputText, usernameTextboxBackground });
+    }
+  }, 100);
+
   public sceneDidUnmount(): void {
     this.part();
   }
@@ -402,6 +430,7 @@ export default class WebsocketScene extends DCL.ScriptableScene<any, IState> {
       characterRotation,
       frameworkPositionChanged,
       frameworkRotationChanged,
+      usernameTextboxChanged,
       character,
     } = this;
     const { id, username } = character;
@@ -444,6 +473,12 @@ export default class WebsocketScene extends DCL.ScriptableScene<any, IState> {
     this.subscribeTo("positionChanged", frameworkPositionChanged.bind(this));
     this.subscribeTo("rotationChanged", frameworkRotationChanged.bind(this));
 
+    // check for username updates
+    this.eventSubscriber.on(
+      "username-editor-textbox_changed",
+      usernameTextboxChanged.bind(this)
+    );
+
     this.setState({ connected, usernameInputText });
 
     // We do a keep-alive type action so the server doesn't remove us
@@ -474,8 +509,59 @@ export default class WebsocketScene extends DCL.ScriptableScene<any, IState> {
         {this.drawCharacterBoxes()}
         {this.drawTiles()}
         {this.drawAutomaticDoor()}
+        {this.drawUsernameEditor()}
       </scene>
     );
+  }
+
+  private drawUsernameEditor(): DCL.ISimplifiedNode[] {
+    const { usernameInputText, usernameTextboxBackground } = this.state;
+
+    const background = (
+      <box
+        id="username-editor-background"
+        position={{ x: 5, y: 1, z: 9.5 }}
+        rotation={{ x: 30, y: 0, z: 0 }}
+        scale={{ x: 1.5, y: 0.8, z: 0.01 }}
+        material="#sign-material"
+        withCollisions={true}
+      />
+    );
+
+    const message = (
+      <text
+        id="username-editor-message"
+        position={{ x: 5, y: 1.2, z: 9.58 }}
+        rotation={{ x: 30, y: 0, z: 0 }}
+        color={textColor}
+        fontFamily={textFontFamily}
+        outlineColor={textOutlineColor}
+        outlineWidth={textOutlineWidth}
+        fontSize={50}
+        width={1.5}
+        height={0.4}
+        value="Change your username"
+      />
+    );
+
+    const textbox = (
+      <input-text
+        id="username-editor-textbox"
+        position={{ x: 5, y: 0.9, z: 9.43 }}
+        rotation={{ x: 30, y: 0, z: 0 }}
+        color={textInputColor}
+        fontFamily={textFontFamily}
+        fontSize={50}
+        height={0.6}
+        background="#EFEFEF"
+        focusedBackground={usernameTextboxBackground}
+        outlineWidth={3}
+        maxLength={30}
+        value={usernameInputText}
+      />
+    );
+
+    return [background, message, textbox];
   }
 
   /**
@@ -583,6 +669,7 @@ export default class WebsocketScene extends DCL.ScriptableScene<any, IState> {
         position={leftWallPosition}
         scale={wallScale}
         transition={wallTransition}
+        withCollisions={true}
       />
     );
 
@@ -594,6 +681,7 @@ export default class WebsocketScene extends DCL.ScriptableScene<any, IState> {
         position={rightWallPosition}
         scale={wallScale}
         transition={wallTransition}
+        withCollisions={true}
       />
     );
 
@@ -820,7 +908,7 @@ export default class WebsocketScene extends DCL.ScriptableScene<any, IState> {
     return (
       <text
         id="billboard-text"
-        position={{ x: 4, y: 3.95, z: 9 }}
+        position={{ x: 5, y: 3.95, z: 9 }}
         rotation={{ x: -50, y: 0, z: 0 }}
         outlineWidth={textOutlineWidth}
         outlineColor={textOutlineColor}
