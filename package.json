@@ -42,6 +42,7 @@
     "start": "npm run prd"
   },
   "now": {
+    "type": "npm",
     "engines": {
       "node": "^8.12.0"
     }
