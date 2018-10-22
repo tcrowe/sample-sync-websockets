@@ -177,6 +177,8 @@ The `CharacterManager` class handles each of these user events coming from webso
 
 The class persists this information into a hash table, a JavaScript `Object`, and allows us to broadcast that information out to every other user.
 
+You may want to copy `./src/server/lib` unless you want to implement the `CharacterManager` yourself.
+
 ---
 
 ## Socket.io Socket events
