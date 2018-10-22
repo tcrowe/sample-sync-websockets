@@ -358,6 +358,9 @@ export default class WebsocketScene extends DCL.ScriptableScene<any, IState> {
 
     socket.on("connect", () => {
       this.setState({ connected: true });
+      
+      const { id, username, position, rotation } = character;
+      socket.emit("character-join", { id, username, position, rotation });
     });
 
     socket.on("disconnect", () => {
@@ -424,6 +427,7 @@ socket.on("character-position", (evt: any) => {
   console.log("character-position", evt, success, error);
   // Do you want to react to character movements?
 });
+
 socket.on("character-rotation", (evt: any) => {
   const [success, error] = characterManager.updateCharacterRotation(evt);
   console.log("character-rotation", evt, success, error);
