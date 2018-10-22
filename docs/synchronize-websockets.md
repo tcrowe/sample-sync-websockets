@@ -14,7 +14,7 @@ All those are things we considered while making this project.
 We need to install some tools before we get started with this. [socket.io](https://socket.io) is a popular set of modules for this type of task.
 
 ```sh
-npm install --save @types/cors @types/express @types/socket.io @types/socket.io-client express cors socket.io socket.io-client decentraland-api
+npm install --save @types/cors @types/express @types/socket.io @types/socket.io-client express cors socket.io socket.io-client decentraland-api lodash
 ```
 
 ---
@@ -185,6 +185,7 @@ Now that we've gone over the `CharacterManager` class and what it can do, let's 
 
 ```ts
 const characterManager = new CharacterManager();
+const throttle = require("lodash/throttle");
 
 socketServer.on("connect", (socket: socketio.Socket) => {
   let characterId: string | undefined;
