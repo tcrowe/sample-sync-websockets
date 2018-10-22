@@ -272,6 +272,7 @@ Now we're ready to put the last pieces together and run all our development task
 
 ```json
 "scripts": {
+  "dev-dcl": "dcl start --port 8834 || true",
   "dev-server": "sleep 6 && nodemon -q -L -d 1 -w dist/server dist/server/index.js || true",
   "dev": "run-p setup dev-*"
 }
