@@ -41,8 +41,8 @@ npm run dev
 Windows users may require `npm install --ignore-scripts` to avoid compilation.
 
 It's going to bind on two ports:
-+ Decentraland preview server (1) `127.0.0.1:8834`
-+ Websocket server (1) `127.0.0.1:8835`
++ Decentraland preview server `127.0.0.1:8834`
++ Websocket server `127.0.0.1:8835`
 
 Open the preview:
 
@@ -54,77 +54,25 @@ If you open it in multiple windows you can see the other players in the same sce
 
 ## Development
 
-It runs a bunch of things in parallel:
-
-+ `tslint` (2)
-+ `decentraland-compiler` (2)
-+ decentraland preview
-+ websocker server
+It runs a few things in parallel:
 
 ```sh
 npm run dev
-```
-
-Or each individually:
-
-```sh
-# tslint
-npm run dev-tslint-scene
-npm run dev-tslint-server
-
-# compile with decentraland-compiler
-npm run dev-compile-scene
-npm run dev-compile-server
-
-# running dcl start
-npm run dev-dcl
-
-# websocket server (6-sec delay waiting for compile)
-npm run dev-websockets
-
-# nuke the build
-npm run clean
 ```
 
 All of `dev-*` tasks watch for changes and re-run themselves.
 
 Configure to your preference:
 
-+ [./src/scene/lib/config.ts](./src/scene/lib/config.ts)
-+ [./src/server/lib/config.ts](./src/server/lib/config.ts)
-+ [./tslint.json](./tslint.json)
-+ [./.prettierrc](./.prettierrc)
-+ [./src/scene/tsconfig.json](./src/scene/tsconfig.json)
-+ [./src/server/tsconfig.json](./src/server/tsconfig.json)
-
-**Some files were duplicated to create a clear distinction between client and server code. See `./src/scene/lib` and `./src/server/lib`. It might be best to keep them in sync.**
-
-**Before commit try running the strict production sequence.**
++ [./config.ts](./config.ts)
++ [./tsconfig.json](./tsconfig.json)
++ [./tsconfig-server.json](./tsconfig-server.json)
 
 ---
 
 ## Production
 
-Run through all the type and code checks then run the server in production mode.
-
-```sh
-npm run prd
-```
-
-Or run each part individually.
-
-```sh
-# prettier, format all the source files one way
-npm run prd-prettier
-
-# lint
-npm run prd-tslint-scene
-npm run prd-tslint-server
-
-# compile
-npm run prd-compile-scene
-npm run prd-compile-server
-```
+Just `npm start`!
 
 ---
 
@@ -133,7 +81,5 @@ npm run prd-compile-server
 If you notice that I've made an affront to correct TypeScript coding practices please forgive.
 
 Others will want to use this as an example or starting place to fork from. If you see room for improvement please fork, mod, and send back here in a PR.
-
-Before commit `npm run prd` to style check first.
 
 Thank you! 🤗
