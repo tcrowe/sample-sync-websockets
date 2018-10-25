@@ -6,7 +6,7 @@
     "email": "",
     "url": ""
   },
-  "main": "dist/scene/index.js",
+  "main": "scene.js",
   "scene": {
     "base": "0,0",
     "parcels": ["0,0"]

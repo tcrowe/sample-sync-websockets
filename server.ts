@@ -1,4 +1,3 @@
-// import * as cluster from "cluster";
 import * as cors from "cors";
 import * as express from "express";
 import * as http from "http";
@@ -11,14 +10,13 @@ import {
   ICharacterPositionEvent,
   ICharacterRotationEvent,
   ICharacterUsernameEvent,
-} from "./lib/character-manager";
-import { socketPath } from "./lib/config";
+} from "./character-manager";
+import { socketPath } from "./config";
 
 const throttle = require("lodash/throttle");
 
 const { HTTP_HOST = "127.0.0.1", HTTP_PORT = "8835" } = process.env;
 const httpPort: number = parseInt(HTTP_PORT, 10);
-// const workerId: string = cluster.worker.id.toString();
 const expressApp: express.Application = express();
 const httpServer: http.Server = http.createServer(expressApp);
 const characterManager = new CharacterManager();

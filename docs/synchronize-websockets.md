@@ -14,7 +14,7 @@ All those are things we considered while making this project.
 We need to install some tools before we get started with this. [socket.io](https://socket.io) is a popular set of modules for this type of task.
 
 ```sh
-npm install --save @types/cors @types/express @types/socket.io @types/socket.io-client express cors socket.io socket.io-client decentraland-api
+npm install --save @types/cors @types/express @types/socket.io @types/socket.io-client express cors socket.io socket.io-client
 ```
 
 ---
@@ -158,9 +158,7 @@ We also benefit by having a less awful troubleshooting process.
 
 ## CharacterManager
 
-The approach we took in this project is called `CharacterManager`.
-
-See `./src/server/lib/character-manager.ts`
+The approach we took in this project is called `CharacterManager`. It's the gatekeeper for the messages being sent between the client and server.
 
 The `character-manager.ts` file contains these methods:
 
@@ -173,9 +171,15 @@ The `character-manager.ts` file contains these methods:
 + `ping(pingEvent: ICharacterPingEvent)`
 + `characterList()`
 
-The `CharacterManager` class handles each of these user events coming from websockets, validates them, and usually returns a tuple. `[success, error]`
+The `CharacterManager` class handles each of these user events coming from websockets, validates them, and usually returns a tuple. `[success, error]` The class uses a hash table, a JavaScript `Object`, to save the character information. It will allows us to broadcast that information out to every other user.
 
-The class persists this information into a hash table, a JavaScript `Object`, and allows us to broadcast that information out to every other user.
+See the following files for how this was implemented:
++ `./character-manager.ts`
++ `./character.ts`
++ `./formats.ts`
++ `./config.ts`
+
+It might be easier for the sake of the tutorial to copy these files into your project unless you're comfortable with TypeScript or want to learn. Either way you can use them as a guide.
 
 ---
 
@@ -313,7 +317,7 @@ Decentraland's `ScriptableScene` object has a few facilities we will use to acco
 ```ts
 import * as DCL from "decentraland-api";
 import * as io from "socket.io-client";
-import { CharacterManager } from "./lib/character-manager";
+import { CharacterManager } from "./character-manager";
 
 //
 // The scene has its own CharacterManager, that is similar to the one in the server
@@ -437,7 +441,7 @@ The final step is to have the scene send event data about its own `Character` to
 
 ```ts
 // This should be at the top of the file ⤴️
-import { Character } from "./lib/character";
+import { Character } from "./character";
 const character = new Character();
 
 // This should be down inside the sceneDidMount() function: ⤵️
