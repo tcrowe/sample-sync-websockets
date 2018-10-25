@@ -46,3 +46,5 @@ You can create the `now` object in `./package.json` or use a `./now.json` file. 
 Just run `now deploy` and it's done!
 
 They really make it easy there.
+
+[Back to ./readme.md](./readme.md)

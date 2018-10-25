@@ -19,6 +19,7 @@ At this time Decentraland isn't rendering the avatars so imagine in this scene t
   * [The Build System](./docs/build-system.md)
   * [Synchronize Websockets](./docs/synchronize-websockets.md)
   * [Proximity Activation Technique](./docs/proximity-activation.md)
+  * [Deploy to Zeit Now](./docs/host-on-zeit-now.md)
 
 ---
 
