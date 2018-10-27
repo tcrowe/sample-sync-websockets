@@ -13,6 +13,8 @@ This is an option that you can use, for free for small deployments, to host a no
 
 You can create the `now` object in `./package.json` or use a `./now.json` file. Below I'm going with the former.
 
+`./server/package.json`
+
 ```json
 "now": {
   "type": "npm",

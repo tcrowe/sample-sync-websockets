@@ -1,9 +1,8 @@
 [
   {
-    "name": "scene",
+    "name": "Compile systems",
     "kind": "Webpack",
     "file": "./scene.tsx",
-    "config": "./tsconfig-scene.json",
     "target": "webworker"
   }
 ]

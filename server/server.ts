@@ -10,8 +10,8 @@ import {
   ICharacterPositionEvent,
   ICharacterRotationEvent,
   ICharacterUsernameEvent,
-} from "./character-manager";
-import { socketPath } from "./config";
+} from "./lib/character-manager";
+import { socketPath } from "./lib/config";
 
 const throttle = require("lodash/throttle");
 

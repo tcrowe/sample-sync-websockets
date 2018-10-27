@@ -20,6 +20,5 @@
     "pretty": true,
     "lib": ["es2017", "dom"]
   },
-  "include": ["./scene.tsx"],
-  "exclude": []
+  "exclude": ["node_modules"]
 }

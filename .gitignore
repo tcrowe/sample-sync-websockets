@@ -1,7 +1,5 @@
-dist
 node_modules
 *.sublime-*
 .vscode
 .DS_Store
-tmp
 *.js

@@ -1,0 +1,27 @@
+{
+  "display": {
+    "title": ""
+  },
+  "contact": {
+    "name": "",
+    "email": ""
+  },
+  "owner": "",
+  "scene": {
+    "parcels": [
+      "0,0"
+    ],
+    "base": "0,0"
+  },
+  "communications": {
+    "type": "webrtc",
+    "signalling": "https://rendezvous.decentraland.org"
+  },
+  "policy": {
+    "fly": false,
+    "voiceEnabled": false,
+    "blacklist": [],
+    "teleportPosition": "0,0,0"
+  },
+  "main": "scene.js"
+}

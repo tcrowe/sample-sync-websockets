@@ -1,0 +1,19 @@
+{
+  "name": "sample-sync-websockets-scene",
+  "version": "0.1.0",
+  "description": "",
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "dcl start --port 8834",
+    "build": "decentraland-compiler build.json",
+    "watch": "decentraland-compiler build.json --watch"
+  },
+  "dependencies": {
+    "@types/lodash": "^4.14.117",
+    "@types/socket.io-client": "^1.4.32",
+    "decentraland": "latest",
+    "decentraland-api": "latest",
+    "lodash": "^4.17.11",
+    "socket.io-client": "^2.1.1"
+  }
+}

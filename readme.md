@@ -3,15 +3,13 @@
 
 This Decentraland scene demonstrates synchronization of state between networked users over websockets. The user should be able to connect and see other users interacting with the scene.
 
-At this time Decentraland isn't rendering the avatars so imagine in this scene the "ghost cylinders" are like a force field around the players while they are in proximity.
+At this time Decentraland isn't rendering the avatars so imagine in this scene the "ghost cylinders" are like a force field around the players while they are in proximity to this scene.
 
 + See all users moving around the scene
 + Proximity activated tiles
 + Proximity activated door
 
 ![example](./img/2018-10-12-websockets01.gif)
-
-![diagram](./img/fig-diagram.png)
 
 ## How to do this
 
@@ -20,6 +18,14 @@ At this time Decentraland isn't rendering the avatars so imagine in this scene t
   * [Synchronize Websockets](./docs/synchronize-websockets.md)
   * [Proximity Activation Technique](./docs/proximity-activation.md)
   * [Deploy to Zeit Now](./docs/host-on-zeit-now.md)
+
+---
+
+## Two parts
+
+The Decentraland **Scene** project is in `./scene`.
+
+The **Server** is in `./server`.
 
 ---
 
@@ -34,8 +40,17 @@ At this time Decentraland isn't rendering the avatars so imagine in this scene t
 ```sh
 git clone https://github.com/tcrowe/sample-sync-websockets.git
 cd sample-sync-websockets
+
+# install scene packages
+cd scene
 npm install
-npm run dev
+npm start
+
+# (in another terminal)
+# install server packages
+cd ../server
+npm install
+npm start
 ```
 
 Windows users may require `npm install --ignore-scripts` to avoid compilation.
@@ -54,25 +69,43 @@ If you open it in multiple windows you can see the other players in the same sce
 
 ## Development
 
-It runs a few things in parallel:
+The `./scene` project has these npm scripts:
 
 ```sh
-npm run dev
+# just build and exit
+npm run build
+
+# build and watch for changes
+npm run watch
+
+# start the preview server which runs also `npm run watch`
+npm start
 ```
 
-All of `dev-*` tasks watch for changes and re-run themselves.
+The `./server` project has the following npm scripts:
 
-Configure to your preference:
+```sh
+# watch for changes in development and re-run the server
+npm run watch
 
-+ [./config.ts](./config.ts)
-+ [./tsconfig.json](./tsconfig.json)
-+ [./tsconfig-server.json](./tsconfig-server.json)
+# run the server in production
+npm start
+```
+
+Each project contains a `./lib` directory. It's possible to adjust some settings in the following files:
+
++ [./scene/lib/config.ts](./scene/lib/config.ts)
++ [./server/lib/config.ts](./server/lib/config.ts)
 
 ---
 
 ## Production
 
-Just `npm start`!
+[Publishing the scene on Decentraland](https://docs.decentraland.org/getting-started/publishing/)
+
+To to run the server in production you can `cd server` and `npm start`.
+
+See also [Host on Zeit Now](./docs/host-on-zeit-now.md)
 
 ---
 

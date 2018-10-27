@@ -8,7 +8,7 @@ and displays for the user.
 import * as DCL from "decentraland-api";
 import { Vector3Component } from "decentraland-api";
 import * as io from "socket.io-client";
-import { Character } from "./character";
+import { Character } from "./lib/character";
 import {
   CharacterManager,
   ICharacterJoinEvent,
@@ -16,9 +16,9 @@ import {
   ICharacterPositionEvent,
   ICharacterRotationEvent,
   ICharacterUsernameEvent,
-} from "./character-manager";
-import { socketHost, socketPath } from "./config";
-import { isValidBoundedVector3Component, isValidUsername } from "./formats";
+} from "./lib/character-manager";
+import { socketHost, socketPath } from "./lib/config";
+import { isValidBoundedVector3Component, isValidUsername } from "./lib/formats";
 
 const clamp = require("lodash/clamp");
 const padEnd = require("lodash/padEnd");

@@ -18,6 +18,5 @@
     "pretty": true,
     "lib": ["es2017"]
   },
-  "include": ["./server.ts"],
-  "exclude": []
+  "exclude": ["node_modules"]
 }
