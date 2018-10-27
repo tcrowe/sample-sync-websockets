@@ -31,11 +31,7 @@ The **Server** is in `./server`.
 
 ## Install
 
-+ Install node
-  * `brew install node`
-  * `choco install nodejs`
-  * https://github.com/nodesource/distributions
-  * https://github.com/creationix/nvm
+[Install Decentraland CLI app](https://docs.decentraland.org/getting-started/installation-guide/)
 
 ```sh
 git clone https://github.com/tcrowe/sample-sync-websockets.git
