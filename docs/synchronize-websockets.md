@@ -14,6 +14,9 @@ All those are things we considered while making this project.
 We need to install some tools before we get started with this. [socket.io](https://socket.io) is a popular set of modules for this type of task.
 
 ```sh
+
+
+
 cd scene
 npm install --save @types/lodash @types/socket.io-client lodash socket.io-client
 
@@ -193,6 +196,8 @@ See the following files for how this was implemented:
 
 It might be easier for the sake of the tutorial to copy these files into your project unless you're comfortable with TypeScript or want to learn. Either way you can use them as a guide.
 
+You may want to copy `./src/server/lib` unless you want to implement the `CharacterManager` yourself.
+
 ---
 
 ## Socket.io Socket events
@@ -203,6 +208,7 @@ Now that we've gone over the `CharacterManager` class and what it can do, let's 
 
 ```ts
 const characterManager = new CharacterManager();
+const throttle = require("lodash/throttle");
 
 socketServer.on("connect", (socket: socketio.Socket) => {
   let characterId: string | undefined;
@@ -375,6 +381,9 @@ export default class WebsocketScene extends DCL.ScriptableScene<any, IState> {
 
     socket.on("connect", () => {
       this.setState({ connected: true });
+      
+      const { id, username, position, rotation } = character;
+      socket.emit("character-join", { id, username, position, rotation });
     });
 
     socket.on("disconnect", () => {
@@ -441,6 +450,7 @@ socket.on("character-position", (evt: any) => {
   console.log("character-position", evt, success, error);
   // Do you want to react to character movements?
 });
+
 socket.on("character-rotation", (evt: any) => {
   const [success, error] = characterManager.updateCharacterRotation(evt);
   console.log("character-rotation", evt, success, error);
