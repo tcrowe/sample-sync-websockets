@@ -5,7 +5,7 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "sourceMap": true,
-    "moduleResolution": "Node",
+    "moduleResolution": "node",
     "forceConsistentCasingInFileNames": true,
     "noUnusedLocals": true,
     "allowSyntheticDefaultImports": false,
@@ -14,8 +14,9 @@
     "strict": true,
     "baseUrl": ".",
     "removeComments": true,
-    "outDir": "../../dist/server",
+    "outDir": ".",
     "pretty": true,
-    "lib": ["ESNext"]
-  }
+    "lib": ["es2017"]
+  },
+  "exclude": ["node_modules"]
 }

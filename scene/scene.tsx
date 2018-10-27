@@ -207,7 +207,7 @@ function distance(pos1: Vector3Component, pos2: Vector3Component): number {
 /**
  * Returns true if the character is inside the configured bounds, 0 to 10
  *
- * See ./lib/config.ts
+ * See ./config.ts
  */
 const charInBounds = (char: Character) =>
   isValidBoundedVector3Component(char.position) === true;

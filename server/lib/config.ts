@@ -2,7 +2,7 @@
 
 Settings for the scene and server.
 
-Copy whatever you change in here to ../scene/lib/config.ts
+Copy whatever you change in here to ../server/lib/config.ts
 
 */
 

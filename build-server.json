@@ -1,7 +1,0 @@
-[
-  {
-    "name": "server",
-    "kind": "TSC",
-    "config": "./src/server/tsconfig.json"
-  }
-]

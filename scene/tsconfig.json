@@ -1,11 +1,11 @@
 {
   "compilerOptions": {
-    "module": "ESNext",
-    "target": "ESNext",
+    "module": "esnext",
+    "target": "es2017",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "sourceMap": true,
-    "moduleResolution": "Node",
+    "moduleResolution": "node",
     "forceConsistentCasingInFileNames": true,
     "noUnusedLocals": true,
     "allowSyntheticDefaultImports": false,
@@ -16,8 +16,9 @@
     "jsx": "react",
     "jsxFactory": "DCL.createElement",
     "removeComments": true,
-    "outDir": "../../dist/scene",
+    "outDir": ".",
     "pretty": true,
-    "lib": ["ESNext", "DOM", "WebWorker"]
-  }
+    "lib": ["es2017", "dom"]
+  },
+  "exclude": ["node_modules"]
 }

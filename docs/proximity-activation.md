@@ -18,6 +18,8 @@ me: 12+ years wasn't a total waste!
 him: 😬
 ```
 
+`./scene/scene.tsx`
+
 ```ts
 import { Vector3Component } from "decentraland-api";
 

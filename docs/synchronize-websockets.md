@@ -14,12 +14,21 @@ All those are things we considered while making this project.
 We need to install some tools before we get started with this. [socket.io](https://socket.io) is a popular set of modules for this type of task.
 
 ```sh
-npm install --save @types/cors @types/express @types/socket.io @types/socket.io-client express cors socket.io socket.io-client decentraland-api lodash
+
+
+
+cd scene
+npm install --save @types/lodash @types/socket.io-client lodash socket.io-client
+
+cd ../server
+npm install --save @types/cors @types/express @types/lodash @types/socket.io cors decentraland-api express nodemon socket.io ts-node typescript
 ```
 
 ---
 
 Below is a simplified version of the server app to demonstrate communication back and forth from the client and server.
+
+`./server/server.ts`
 
 ```ts
 import * as cors from "cors";
@@ -57,6 +66,8 @@ The example above shows how we can connect `http`, `express`, and `socket.io` to
 ## Graceful shutdown
 
 You should, where possible, get the server to gracefully shut down so that it doesn't accidentally keep ports open. It will annoy and frustrate users to no end if you don't.
+
+`./server/server.ts`
 
 ```ts
 /**
@@ -98,6 +109,8 @@ process.on("SIGTERM", () => shutdown());
 
 ## Start the http server
 
+`./server/server.ts`
+
 ```ts
 const port = 8835;
 
@@ -117,6 +130,8 @@ httpServer.listen(port, (err?: Error) => {
 ---
 
 ## Start socket.io
+
+`./server/server.ts`
 
 ```ts
 socketServer.on("connect", (socket: socketio.Socket) => {
@@ -158,9 +173,7 @@ We also benefit by having a less awful troubleshooting process.
 
 ## CharacterManager
 
-The approach we took in this project is called `CharacterManager`.
-
-See `./src/server/lib/character-manager.ts`
+The approach we took in this project is called `CharacterManager`. It's the gatekeeper for the messages being sent between the client and server.
 
 The `character-manager.ts` file contains these methods:
 
@@ -173,9 +186,15 @@ The `character-manager.ts` file contains these methods:
 + `ping(pingEvent: ICharacterPingEvent)`
 + `characterList()`
 
-The `CharacterManager` class handles each of these user events coming from websockets, validates them, and usually returns a tuple. `[success, error]`
+The `CharacterManager` class handles each of these user events coming from websockets, validates them, and usually returns a tuple. `[success, error]` The class uses a hash table, a JavaScript `Object`, to save the character information. It will allows us to broadcast that information out to every other user.
 
-The class persists this information into a hash table, a JavaScript `Object`, and allows us to broadcast that information out to every other user.
+See the following files for how this was implemented:
++ [./server/lib/character-manager.ts](./server/lib/character-manager.ts)
++ [./server/lib/character.ts](./server/lib/character.ts)
++ [./server/lib/formats.ts](./server/lib/formats.ts)
++ [./server/lib/config.ts](./server/lib/config.ts)
+
+It might be easier for the sake of the tutorial to copy these files into your project unless you're comfortable with TypeScript or want to learn. Either way you can use them as a guide.
 
 You may want to copy `./src/server/lib` unless you want to implement the `CharacterManager` yourself.
 
@@ -184,6 +203,8 @@ You may want to copy `./src/server/lib` unless you want to implement the `Charac
 ## Socket.io Socket events
 
 Now that we've gone over the `CharacterManager` class and what it can do, let's instance one of these objects and wire it up to socket.io.
+
+`./server/server.ts`
 
 ```ts
 const characterManager = new CharacterManager();
@@ -313,6 +334,8 @@ Decentraland's `ScriptableScene` object has a few facilities we will use to acco
 + `positionChanged`
 + `rotationChanged`
 
+`./scene/scene.tsx`
+
 ```ts
 import * as DCL from "decentraland-api";
 import * as io from "socket.io-client";
@@ -407,7 +430,7 @@ export default class WebsocketScene extends DCL.ScriptableScene<any, IState> {
 
 Above we were just concerned with bootstrapping our scene with socket events and basic state. It's ready for any errors that may come up, *for those of us who are just humans that make errors*. Now we can hook up to events sent by the server that relate to other users. This isn't exactly how we did it in the example app. It's a simplified version printing all the output to the console.
 
-Still inside `sceneDidMount() {}`:
+`./scene/scene.tsx` Still inside `sceneDidMount() {}`:
 
 ```ts
 socket.on("character-join", (evt: any) => {
@@ -441,6 +464,7 @@ socket.on("character-rotation", (evt: any) => {
 
 The final step is to have the scene send event data about its own `Character` to the server. The server then relays that information to everyone else.
 
+`./scene/scene.tsx`
 
 ```ts
 // This should be at the top of the file ⤴️
