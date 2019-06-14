@@ -1,3 +1,4 @@
+⚠️The Decentraland API changed since this was made so it wont work. Please see https://decentraland.org/
 
 # sample-sync-websockets
 
